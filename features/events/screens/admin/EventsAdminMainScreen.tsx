@@ -12,6 +12,11 @@ import {
   View,
 } from 'react-native';
 
+// NUEVO: import del DateTimePicker
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
+
 type SectionTitle = 'Hoy' | 'Esta semana' | 'Próximos';
 
 type EventSection = {
@@ -278,8 +283,6 @@ const adminEventSectionsSeed: EventSection[] = [
   },
 ];
 
-const sectionOptions: SectionTitle[] = ['Hoy', 'Esta semana', 'Próximos'];
-
 export function EventsAdminMainScreen() {
   // Solo mostramos los eventos seed; no se modifican al guardar
   const [sections] = useState<EventSection[]>(adminEventSectionsSeed);
@@ -302,9 +305,16 @@ export function EventsAdminMainScreen() {
     section: 'Hoy',
   });
 
+  // estados para mostrar los pickers
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+
+  // para saber si la fecha seleccionada es hoy
+  const [isTodaySelected, setIsTodaySelected] = useState(false);
+
   const closeDetail = () => setSelectedEvent(null);
 
-  const resetNewEvent = () =>
+  const resetNewEvent = () => {
     setNewEvent({
       title: '',
       date: '',
@@ -313,6 +323,8 @@ export function EventsAdminMainScreen() {
       description: '',
       section: 'Hoy',
     });
+    setIsTodaySelected(false);
+  };
 
   const handleOpenCreate = () => {
     resetNewEvent();
@@ -322,15 +334,140 @@ export function EventsAdminMainScreen() {
   const handleCancelCreate = () => {
     resetNewEvent();
     setShowCreateModal(false);
+    setShowDatePicker(false);
+    setShowTimePicker(false);
   };
 
-  // >>> AQUÍ LA LÓGICA QUE CAMBIAMOS <<<
+  // No se agrega a la lista, solo se muestra el mensaje
+  // AQUÍ validamos si la hora es pasada cuando la fecha es hoy
   const handleCreateEvent = () => {
-    // No se agrega a la lista, solo se muestra el mensaje
+    // Validación básica: que haya fecha y hora
+    if (!newEvent.date || !newEvent.time) {
+      Alert.alert(
+        'Datos incompletos',
+        'Seleccione la fecha y la hora del evento.',
+      );
+      return;
+    }
+
+    // Si la fecha seleccionada es hoy, validar que la hora no sea pasada
+    if (isTodaySelected) {
+      const now = new Date();
+
+      const [hourStr, minuteStr] = newEvent.time.split(':');
+      const hours = Number(hourStr);
+      const minutes = Number(minuteStr);
+
+      // Validar formato de hora
+      if (
+        Number.isNaN(hours) ||
+        Number.isNaN(minutes) ||
+        hours < 0 ||
+        hours > 23 ||
+        minutes < 0 ||
+        minutes > 59
+      ) {
+        Alert.alert('Hora inválida', 'Seleccione una hora válida.');
+        return;
+      }
+
+      const eventTime = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        hours,
+        minutes,
+        0,
+        0,
+      );
+
+      if (eventTime.getTime() < now.getTime()) {
+        Alert.alert(
+          'Hora en el pasado',
+          'La hora seleccionada ya pasó. Elija una hora posterior a la actual.',
+        );
+        return;
+      }
+    }
+
+    // Si pasa las validaciones, solo cerramos y mostramos mensaje (no guardamos nada)
     setShowCreateModal(false);
     resetNewEvent();
+    setShowDatePicker(false);
+    setShowTimePicker(false);
 
     Alert.alert('Evento guardado', 'Evento guardado exitosamente.');
+  };
+
+  // manejador de cambio de fecha con sección automática
+  const handleDateChange = (
+    event: DateTimePickerEvent,
+    selectedDate?: Date,
+  ) => {
+    if (event.type === 'dismissed' || !selectedDate) {
+      setShowDatePicker(false);
+      return;
+    }
+
+    // Normalizar "hoy" y la fecha seleccionada a solo fecha (sin hora)
+    const today = new Date();
+    const startOfToday = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+    );
+    const startOfSelected = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth(),
+      selectedDate.getDate(),
+    );
+
+    const diffMs = startOfSelected.getTime() - startOfToday.getTime();
+    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+    let autoSection: SectionTitle;
+
+    if (diffDays === 0) {
+      autoSection = 'Hoy';
+    } else if (diffDays > 0 && diffDays <= 7) {
+      autoSection = 'Esta semana';
+    } else {
+      autoSection = 'Próximos';
+    }
+
+    setIsTodaySelected(diffDays === 0);
+
+    const formatted = selectedDate.toLocaleDateString('es-MX', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+
+    setShowDatePicker(false);
+    setNewEvent((prev) => ({
+      ...prev,
+      date: formatted,
+      section: autoSection, // se sigue calculando, aunque no lo muestre en UI
+    }));
+  };
+
+  const handleTimeChange = (
+    event: DateTimePickerEvent,
+    selectedDate?: Date,
+  ) => {
+    if (event.type === 'dismissed' || !selectedDate) {
+      setShowTimePicker(false);
+      return;
+    }
+
+    const formatted = selectedDate.toLocaleTimeString('es-MX', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+
+    setShowTimePicker(false);
+    setNewEvent((prev) => ({ ...prev, time: formatted }));
   };
 
   return (
@@ -448,7 +585,10 @@ export function EventsAdminMainScreen() {
       {showCreateModal && (
         <View className="absolute inset-0 bg-slate-950/95">
           <View className="flex-1 justify-center px-4">
-            <View className="flex-1 rounded-2xl border border-slate-700 bg-slate-900">
+            <View
+              className="rounded-2xl border border-slate-700 bg-slate-900"
+              style={{ maxHeight: 620 }}
+            >
               <ScrollView contentContainerStyle={{ padding: 16 }}>
                 {/* Encabezado + cerrar */}
                 <View className="mb-3 flex-row items-center justify-between">
@@ -479,33 +619,39 @@ export function EventsAdminMainScreen() {
                   }
                 />
 
-                {/* Campo: Fecha */}
+                {/* Campo: Fecha (con calendario) */}
                 <Text className="mb-1 text-xs font-semibold text-slate-200">
                   Fecha
                 </Text>
-                <TextInput
-                  className="mb-3 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-50"
-                  placeholder="Ej. 10 dic 2025"
-                  placeholderTextColor="#94a3b8"
-                  value={newEvent.date}
-                  onChangeText={(text) =>
-                    setNewEvent((prev) => ({ ...prev, date: text }))
-                  }
-                />
+                <Pressable
+                  onPress={() => setShowDatePicker(true)}
+                  className="mb-3 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2"
+                >
+                  <Text
+                    className={`text-sm ${
+                      newEvent.date ? 'text-slate-50' : 'text-slate-400'
+                    }`}
+                  >
+                    {newEvent.date || 'Seleccionar fecha'}
+                  </Text>
+                </Pressable>
 
-                {/* Campo: Hora */}
+                {/* Campo: Hora (con reloj) */}
                 <Text className="mb-1 text-xs font-semibold text-slate-200">
                   Hora
                 </Text>
-                <TextInput
-                  className="mb-3 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-50"
-                  placeholder="Ej. 16:00"
-                  placeholderTextColor="#94a3b8"
-                  value={newEvent.time}
-                  onChangeText={(text) =>
-                    setNewEvent((prev) => ({ ...prev, time: text }))
-                  }
-                />
+                <Pressable
+                  onPress={() => setShowTimePicker(true)}
+                  className="mb-3 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2"
+                >
+                  <Text
+                    className={`text-sm ${
+                      newEvent.time ? 'text-slate-50' : 'text-slate-400'
+                    }`}
+                  >
+                    {newEvent.time || 'Seleccionar hora'}
+                  </Text>
+                </Pressable>
 
                 {/* Campo: Lugar */}
                 <Text className="mb-1 text-xs font-semibold text-slate-200">
@@ -537,37 +683,6 @@ export function EventsAdminMainScreen() {
                   }
                 />
 
-                {/* Selección de sección (aunque no se use para guardar, se mantiene para la UI) */}
-                <Text className="mb-1 text-xs font-semibold text-slate-200">
-                  Sección
-                </Text>
-                <View className="mt-1 flex-row flex-wrap gap-2">
-                  {sectionOptions.map((option) => {
-                    const isActive = newEvent.section === option;
-                    return (
-                      <Pressable
-                        key={option}
-                        onPress={() =>
-                          setNewEvent((prev) => ({ ...prev, section: option }))
-                        }
-                        className={`rounded-full border px-3 py-1 ${
-                          isActive
-                            ? 'border-emerald-500 bg-emerald-600/20'
-                            : 'border-slate-600 bg-slate-800'
-                        }`}
-                      >
-                        <Text
-                          className={`text-xs font-semibold ${
-                            isActive ? 'text-emerald-300' : 'text-slate-200'
-                          }`}
-                        >
-                          {option}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-
                 {/* Botones de acción */}
                 <View className="mt-6 flex-row justify-end gap-3">
                   <Pressable
@@ -589,6 +704,24 @@ export function EventsAdminMainScreen() {
                   </Pressable>
                 </View>
               </ScrollView>
+              {/* Render condicional de los pickers (fuera del ScrollView) */}
+              {showDatePicker && (
+                <DateTimePicker
+                  value={new Date()}
+                  mode="date"
+                  display="default"
+                  onChange={handleDateChange}
+                  minimumDate={new Date()} // evita fechas pasadas
+                />
+              )}
+              {showTimePicker && (
+                <DateTimePicker
+                  value={new Date()}
+                  mode="time"
+                  display="default"
+                  onChange={handleTimeChange}
+                />
+              )}
             </View>
           </View>
         </View>
