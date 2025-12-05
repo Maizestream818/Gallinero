@@ -12,19 +12,22 @@ import {
   View,
 } from 'react-native';
 
-// NUEVO: import del DateTimePicker
+// Date / time picker
 import DateTimePicker, {
   DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 
+// Cámara + escáner QR
+import { CameraView, useCameraPermissions } from 'expo-camera';
+
 type SectionTitle = 'Hoy' | 'Esta semana' | 'Próximos';
 
 type EventSection = {
-  title: SectionTitle; // "Hoy", "Esta semana", "Próximos"
+  title: SectionTitle;
   data: Event[];
 };
 
-// Muchos datos de ejemplo para el ADMIN (para probar scroll)
+// Datos de ejemplo
 const adminEventSectionsSeed: EventSection[] = [
   {
     title: 'Hoy',
@@ -284,10 +287,11 @@ const adminEventSectionsSeed: EventSection[] = [
 ];
 
 export function EventsAdminMainScreen() {
-  // Solo mostramos los eventos seed; no se modifican al guardar
+  // Lista de eventos (solo seed, no se modifica)
   const [sections] = useState<EventSection[]>(adminEventSectionsSeed);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
+  // Formulario "crear"
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newEvent, setNewEvent] = useState<{
     title: string;
@@ -305,12 +309,20 @@ export function EventsAdminMainScreen() {
     section: 'Hoy',
   });
 
-  // estados para mostrar los pickers
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-
-  // para saber si la fecha seleccionada es hoy
   const [isTodaySelected, setIsTodaySelected] = useState(false);
+
+  // Cámara / escáner QR
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const [isScannerVisible, setIsScannerVisible] = useState(false);
+  const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
+  const [hasScanned, setHasScanned] = useState(false);
+
+  // Invitados escaneados por evento: { [eventId]: string[] }
+  const [scannedGuestsByEvent, setScannedGuestsByEvent] = useState<
+    Record<string, string[]>
+  >({});
 
   const closeDetail = () => setSelectedEvent(null);
 
@@ -338,10 +350,8 @@ export function EventsAdminMainScreen() {
     setShowTimePicker(false);
   };
 
-  // No se agrega a la lista, solo se muestra el mensaje
-  // AQUÍ validamos si la hora es pasada cuando la fecha es hoy
+  // Guardar (solo valida, NO guarda)
   const handleCreateEvent = () => {
-    // Validación básica: que haya fecha y hora
     if (!newEvent.date || !newEvent.time) {
       Alert.alert(
         'Datos incompletos',
@@ -350,15 +360,13 @@ export function EventsAdminMainScreen() {
       return;
     }
 
-    // Si la fecha seleccionada es hoy, validar que la hora no sea pasada
+    // Si es hoy, validar que la hora no sea pasada
     if (isTodaySelected) {
       const now = new Date();
-
       const [hourStr, minuteStr] = newEvent.time.split(':');
       const hours = Number(hourStr);
       const minutes = Number(minuteStr);
 
-      // Validar formato de hora
       if (
         Number.isNaN(hours) ||
         Number.isNaN(minutes) ||
@@ -390,7 +398,6 @@ export function EventsAdminMainScreen() {
       }
     }
 
-    // Si pasa las validaciones, solo cerramos y mostramos mensaje (no guardamos nada)
     setShowCreateModal(false);
     resetNewEvent();
     setShowDatePicker(false);
@@ -399,7 +406,7 @@ export function EventsAdminMainScreen() {
     Alert.alert('Evento guardado', 'Evento guardado exitosamente.');
   };
 
-  // manejador de cambio de fecha con sección automática
+  // Fecha → calcula sección automática
   const handleDateChange = (
     event: DateTimePickerEvent,
     selectedDate?: Date,
@@ -409,7 +416,6 @@ export function EventsAdminMainScreen() {
       return;
     }
 
-    // Normalizar "hoy" y la fecha seleccionada a solo fecha (sin hora)
     const today = new Date();
     const startOfToday = new Date(
       today.getFullYear(),
@@ -426,7 +432,6 @@ export function EventsAdminMainScreen() {
     const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
 
     let autoSection: SectionTitle;
-
     if (diffDays === 0) {
       autoSection = 'Hoy';
     } else if (diffDays > 0 && diffDays <= 7) {
@@ -447,7 +452,7 @@ export function EventsAdminMainScreen() {
     setNewEvent((prev) => ({
       ...prev,
       date: formatted,
-      section: autoSection, // se sigue calculando, aunque no lo muestre en UI
+      section: autoSection,
     }));
   };
 
@@ -470,6 +475,63 @@ export function EventsAdminMainScreen() {
     setNewEvent((prev) => ({ ...prev, time: formatted }));
   };
 
+  // --- Escáner QR ---
+
+  const handleOpenScanner = async () => {
+    if (!cameraPermission || cameraPermission.status !== 'granted') {
+      const permission = await requestCameraPermission();
+
+      if (!permission.granted) {
+        Alert.alert(
+          'Permiso de cámara',
+          'Necesita otorgar permiso a la cámara para escanear invitaciones.',
+        );
+        return;
+      }
+    }
+
+    setLastScannedCode(null);
+    setHasScanned(false);
+    setIsScannerVisible(true);
+  };
+
+  const handleCloseScanner = () => {
+    setIsScannerVisible(false);
+    setHasScanned(false);
+  };
+
+  const handleBarcodeScanned = (result: { data?: string }) => {
+    if (!result?.data) return;
+    if (hasScanned) return; // evita múltiples lecturas seguidas
+
+    const code = result.data as string;
+
+    setHasScanned(true);
+    setLastScannedCode(code);
+
+    if (selectedEvent?.id) {
+      setScannedGuestsByEvent((prev) => {
+        const prevList = prev[selectedEvent.id] ?? [];
+
+        // 👇 Si ya existe ese invitado en la lista de este evento, no lo agregamos
+        if (prevList.includes(code)) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          [selectedEvent.id]: [...prevList, code],
+        };
+      });
+    }
+  };
+
+  // Invitados del evento actualmente seleccionado
+  const currentEventGuests =
+    selectedEvent && scannedGuestsByEvent[selectedEvent.id]
+      ? scannedGuestsByEvent[selectedEvent.id]
+      : [];
+
   return (
     <View className="flex-1 bg-slate-900">
       <StatusBar style="light" />
@@ -483,7 +545,6 @@ export function EventsAdminMainScreen() {
           <EventCard
             event={item}
             onPress={(event) => {
-              // Abrimos la "ventana emergente" con los detalles
               setSelectedEvent(event);
             }}
           />
@@ -502,7 +563,6 @@ export function EventsAdminMainScreen() {
               Hoy, esta semana y próximos eventos.
             </Text>
 
-            {/* Botón Agregar evento */}
             <Pressable
               onPress={handleOpenCreate}
               className="mt-3 self-start rounded-full bg-emerald-600 px-4 py-2 active:opacity-80"
@@ -522,7 +582,7 @@ export function EventsAdminMainScreen() {
         }
       />
 
-      {/* VENTANA EMERGENTE / DETALLE DEL EVENTO */}
+      {/* VENTANA DETALLE DEL EVENTO */}
       {!showCreateModal && selectedEvent && (
         <View className="absolute inset-0 bg-slate-950/95">
           <View className="flex-1 justify-center px-4">
@@ -531,7 +591,6 @@ export function EventsAdminMainScreen() {
               style={{ maxHeight: 520 }}
             >
               <ScrollView contentContainerStyle={{ padding: 16 }}>
-                {/* Botón cerrar */}
                 <Pressable
                   onPress={closeDetail}
                   className="mb-2 self-end rounded-full bg-slate-800 px-4 py-2 active:opacity-80"
@@ -541,31 +600,26 @@ export function EventsAdminMainScreen() {
                   </Text>
                 </Pressable>
 
-                {/* Fecha y hora */}
                 <Text className="text-xs font-semibold text-sky-400">
                   {selectedEvent.time
                     ? `${selectedEvent.date} • ${selectedEvent.time}`
                     : selectedEvent.date}
                 </Text>
 
-                {/* Título */}
                 <Text className="mt-2 text-2xl font-bold text-slate-50">
                   {selectedEvent.title}
                 </Text>
 
-                {/* Lugar */}
                 {selectedEvent.location ? (
                   <Text className="mt-1 text-sm font-semibold text-slate-300">
                     {selectedEvent.location}
                   </Text>
                 ) : null}
 
-                {/* Descripción */}
                 <Text className="mt-4 text-sm leading-relaxed text-slate-200">
                   {selectedEvent.description ?? 'Sin descripción disponible.'}
                 </Text>
 
-                {/* Espacio para info extra futura */}
                 <View className="mt-6 rounded-2xl border border-slate-700 bg-slate-800 p-4">
                   <Text className="text-sm font-semibold text-slate-100">
                     Información adicional
@@ -575,13 +629,50 @@ export function EventsAdminMainScreen() {
                     evento, enlace a videollamada, etc.
                   </Text>
                 </View>
+
+                {/* Botón para escanear invitados */}
+                <View className="mt-6">
+                  <Pressable
+                    onPress={handleOpenScanner}
+                    className="w-full items-center justify-center rounded-full bg-emerald-600 px-4 py-3 active:opacity-80"
+                  >
+                    <Text className="text-xs font-semibold text-white">
+                      Escanear invitados
+                    </Text>
+                  </Pressable>
+
+                  {/* Lista de invitados escaneados */}
+                  {currentEventGuests.length > 0 && (
+                    <View className="mt-4 rounded-2xl border border-slate-700 bg-slate-800 p-3">
+                      <Text className="text-xs font-semibold text-slate-100">
+                        Invitados escaneados ({currentEventGuests.length})
+                      </Text>
+                      <View className="mt-2 gap-1">
+                        {currentEventGuests.map((code, index) => (
+                          <View
+                            key={`${code}-${index}`}
+                            className="flex-row items-center gap-2"
+                          >
+                            <View className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                            <Text
+                              className="flex-1 text-[11px] text-slate-200"
+                              numberOfLines={1}
+                            >
+                              {code}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  )}
+                </View>
               </ScrollView>
             </View>
           </View>
         </View>
       )}
 
-      {/* VENTANA EMERGENTE / FORMULARIO CREAR EVENTO */}
+      {/* VENTANA FORMULARIO CREAR EVENTO */}
       {showCreateModal && (
         <View className="absolute inset-0 bg-slate-950/95">
           <View className="flex-1 justify-center px-4">
@@ -590,7 +681,6 @@ export function EventsAdminMainScreen() {
               style={{ maxHeight: 620 }}
             >
               <ScrollView contentContainerStyle={{ padding: 16 }}>
-                {/* Encabezado + cerrar */}
                 <View className="mb-3 flex-row items-center justify-between">
                   <Text className="text-base font-semibold text-slate-50">
                     Crear nuevo evento
@@ -605,7 +695,6 @@ export function EventsAdminMainScreen() {
                   </Pressable>
                 </View>
 
-                {/* Campo: Título */}
                 <Text className="mb-1 text-xs font-semibold text-slate-200">
                   Título
                 </Text>
@@ -619,7 +708,6 @@ export function EventsAdminMainScreen() {
                   }
                 />
 
-                {/* Campo: Fecha (con calendario) */}
                 <Text className="mb-1 text-xs font-semibold text-slate-200">
                   Fecha
                 </Text>
@@ -636,7 +724,6 @@ export function EventsAdminMainScreen() {
                   </Text>
                 </Pressable>
 
-                {/* Campo: Hora (con reloj) */}
                 <Text className="mb-1 text-xs font-semibold text-slate-200">
                   Hora
                 </Text>
@@ -653,7 +740,6 @@ export function EventsAdminMainScreen() {
                   </Text>
                 </Pressable>
 
-                {/* Campo: Lugar */}
                 <Text className="mb-1 text-xs font-semibold text-slate-200">
                   Lugar
                 </Text>
@@ -667,7 +753,6 @@ export function EventsAdminMainScreen() {
                   }
                 />
 
-                {/* Campo: Descripción */}
                 <Text className="mb-1 text-xs font-semibold text-slate-200">
                   Descripción
                 </Text>
@@ -683,7 +768,6 @@ export function EventsAdminMainScreen() {
                   }
                 />
 
-                {/* Botones de acción */}
                 <View className="mt-6 flex-row justify-end gap-3">
                   <Pressable
                     onPress={handleCancelCreate}
@@ -704,16 +788,17 @@ export function EventsAdminMainScreen() {
                   </Pressable>
                 </View>
               </ScrollView>
-              {/* Render condicional de los pickers (fuera del ScrollView) */}
+
               {showDatePicker && (
                 <DateTimePicker
                   value={new Date()}
                   mode="date"
                   display="default"
                   onChange={handleDateChange}
-                  minimumDate={new Date()} // evita fechas pasadas
+                  minimumDate={new Date()}
                 />
               )}
+
               {showTimePicker && (
                 <DateTimePicker
                   value={new Date()}
@@ -723,6 +808,66 @@ export function EventsAdminMainScreen() {
                 />
               )}
             </View>
+          </View>
+        </View>
+      )}
+
+      {/* OVERLAY DEL ESCÁNER QR */}
+      {isScannerVisible && (
+        <View className="absolute inset-0 bg-black/95">
+          <CameraView
+            style={{ flex: 1 }}
+            facing="back"
+            barcodeScannerSettings={{
+              barcodeTypes: ['qr'],
+            }}
+            onBarcodeScanned={handleBarcodeScanned}
+          />
+
+          {/* Recuadro inferior con acciones */}
+          <View className="absolute inset-x-4 bottom-10 rounded-3xl border border-emerald-500/40 bg-slate-900/90 px-4 py-3 shadow-lg shadow-black/70">
+            {lastScannedCode ? (
+              <>
+                <Text className="text-[11px] font-semibold tracking-wide text-emerald-300 uppercase">
+                  Invitado escaneado
+                </Text>
+                <Text className="mt-1 text-xs text-slate-100" numberOfLines={2}>
+                  {lastScannedCode}
+                </Text>
+
+                <View className="mt-3 flex-row justify-between gap-2">
+                  <Pressable
+                    onPress={() => {
+                      setHasScanned(false);
+                      setLastScannedCode(null);
+                    }}
+                    className="flex-1 items-center rounded-full bg-emerald-600 px-3 py-2 active:opacity-80"
+                  >
+                    <Text className="text-[11px] font-semibold text-white">
+                      Escanear sig. invitado
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={handleCloseScanner}
+                    className="flex-1 items-center rounded-full border border-slate-500 bg-slate-800/80 px-3 py-2 active:opacity-80"
+                  >
+                    <Text className="text-[11px] font-semibold text-slate-100">
+                      Cerrar
+                    </Text>
+                  </Pressable>
+                </View>
+              </>
+            ) : (
+              <>
+                <Text className="text-[11px] font-semibold tracking-wide text-slate-300 uppercase">
+                  Apunte la cámara al código QR del invitado
+                </Text>
+                <Text className="mt-1 text-[11px] text-slate-400">
+                  El contenido se mostrará aquí cuando se detecte un código.
+                </Text>
+              </>
+            )}
           </View>
         </View>
       )}

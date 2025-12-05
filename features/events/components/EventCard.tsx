@@ -51,12 +51,6 @@ export function EventCard({ event, onPress }: Props) {
           {description}
         </Text>
       ) : null}
-
-      {/* Footer de la tarjeta */}
-      <View className="mt-3 flex-row items-center justify-between">
-        <Text className="text-xs text-slate-400">Toca para ver detalles</Text>
-        <Text className="text-xs font-semibold text-sky-400">Ver más</Text>
-      </View>
     </Pressable>
   );
 }
