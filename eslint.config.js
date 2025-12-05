@@ -16,4 +16,16 @@ module.exports = defineConfig([
   {
     ignores: ['dist/*'],
   },
+
+  // ⬇️⬇️⬇️ NUEVO: que ESLint resuelva imports usando tsconfig.json
+  {
+    settings: {
+      'import/resolver': {
+        typescript: {
+          project: './tsconfig.json', // usa tu tsconfig con "@/*": ["./*"]
+        },
+      },
+    },
+  },
+  // ⬆️⬆️⬆️ NUEVO
 ]);
