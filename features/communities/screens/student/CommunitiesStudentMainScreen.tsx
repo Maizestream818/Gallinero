@@ -11,12 +11,14 @@ import {
   Image,
   Pressable,
   BackHandler,
+  Platform,
+  StatusBar as RNStatusBar,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 
 // ----------------------------------------------------------------------
-// 1. GENERADOR DE 30 COMUNIDADES (Igual que antes)
+// 1. GENERADOR DE 30 COMUNIDADES
 // ----------------------------------------------------------------------
 
 const COMMUNITY_TYPES = [
@@ -70,10 +72,9 @@ const DUMMY_COMMUNITIES = Array.from({ length: 30 }, (_, i) => {
 });
 
 // ----------------------------------------------------------------------
-// 2. GENERADOR DE POSTS ALEATORIOS (NUEVO)
+// 2. GENERADOR DE POSTS (30 por comunidad)
 // ----------------------------------------------------------------------
 
-// Bancos de datos para generar variedad
 const AUTHORS = [
   'Sofía Martínez',
   'Jorge Luis',
@@ -84,7 +85,6 @@ const AUTHORS = [
   'Valentina R.',
   'David P.',
 ];
-const ROLES = ['Estudiante', 'Delegado', 'Admin', 'Estudiante', 'Estudiante']; // Más probabilidad de ser estudiante
 const CONTENTS = [
   '¿Alguien tiene los apuntes de la última clase? No pude asistir 😢',
   '¡Atención! Mañana hay mantenimiento en las instalaciones.',
@@ -93,31 +93,28 @@ const CONTENTS = [
   'Organizando grupo de estudio para los finales. ¿Quién se apunta?',
   'Perdí mi credencial cerca del edificio B, si alguien la ve avísenme.',
   'Recuerden que el viernes es la fecha límite para el proyecto.',
-  '¿Alguna recomendación de profesor para esta materia?',
-  'Se busca bajista para banda de rock.',
   'Torneo de fútbol este sábado, inscriban a sus equipos ⚽',
+  '¿Alguien para compartir locker este semestre?',
+  'Busco libro de anatomía usado, precio razonable.',
+  'Se busca bajista para banda de rock universitario 🎸',
+  '¿Alguien sabe a qué hora abre la biblioteca mañana?',
 ];
 
-// Función que genera posts automáticamente
 const generateAllPosts = () => {
   const allPosts = [];
   let postIdCounter = 1;
 
   DUMMY_COMMUNITIES.forEach((community) => {
-    // Generar entre 4 y 6 posts por comunidad de forma aleatoria
-    const numPosts = Math.floor(Math.random() * 3) + 4;
+    const numPosts = 30;
 
     for (let i = 0; i < numPosts; i++) {
       allPosts.push({
         id: `p${postIdCounter++}`,
-        communityId: community.id, // Vinculamos el post a esta comunidad
+        communityId: community.id,
         author: AUTHORS[Math.floor(Math.random() * AUTHORS.length)],
-        role: ROLES[Math.floor(Math.random() * ROLES.length)],
-        time: `Hace ${Math.floor(Math.random() * 12) + 1} horas`,
+        role: 'Estudiante',
+        time: `Hace ${Math.floor(Math.random() * 23) + 1} horas`,
         content: CONTENTS[Math.floor(Math.random() * CONTENTS.length)],
-        likes: Math.floor(Math.random() * 50),
-        comments: Math.floor(Math.random() * 10),
-        // Avatar aleatorio de pravatar
         avatar: `https://i.pravatar.cc/150?u=${postIdCounter}`,
       });
     }
@@ -126,7 +123,6 @@ const generateAllPosts = () => {
   return allPosts;
 };
 
-// Generamos la lista inicial una sola vez
 const INITIAL_POSTS = generateAllPosts();
 
 export function CommunitiesStudentMainScreen() {
@@ -137,7 +133,6 @@ export function CommunitiesStudentMainScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [postText, setPostText] = useState('');
 
-  // Manejo del botón físico Atrás
   useEffect(() => {
     const onBackPress = () => {
       if (selectedCommunity) {
@@ -153,7 +148,6 @@ export function CommunitiesStudentMainScreen() {
     return () => subscription.remove();
   }, [selectedCommunity]);
 
-  // Publicar post
   const handlePublish = () => {
     if (postText.trim() === '') return;
 
@@ -164,8 +158,6 @@ export function CommunitiesStudentMainScreen() {
       role: 'Estudiante',
       time: 'Ahora',
       content: postText,
-      likes: 0,
-      comments: 0,
       avatar: 'https://i.pravatar.cc/150?u=me',
     };
 
@@ -173,6 +165,9 @@ export function CommunitiesStudentMainScreen() {
     setPostText('');
     setModalVisible(false);
   };
+
+  const androidPaddingTop =
+    Platform.OS === 'android' ? RNStatusBar.currentHeight : 0;
 
   // ----------------------------------------------------------------------
   // RENDERIZADO
@@ -229,13 +224,18 @@ export function CommunitiesStudentMainScreen() {
     );
 
     return (
-      <SafeAreaView className="flex-1 bg-slate-50">
+      <SafeAreaView
+        className="flex-1 bg-slate-50"
+        style={{ paddingTop: androidPaddingTop }}
+      >
         <StatusBar style="dark" />
 
+        {/* Header Detalle */}
         <View className="flex-row items-center border-b border-slate-100 bg-white px-4 pt-2 pb-4">
           <TouchableOpacity
             onPress={() => setSelectedCommunity(null)}
-            className="mr-2 rounded-full bg-slate-100 p-2 active:bg-slate-200"
+            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+            className="mr-3 rounded-full bg-slate-100 p-2 active:bg-slate-200"
           >
             <IconSymbol
               name="chevron.right"
@@ -252,11 +252,14 @@ export function CommunitiesStudentMainScreen() {
           </View>
         </View>
 
+        {/* LISTA DE POSTS */}
         <FlatList
           data={communityPosts}
           keyExtractor={(item) => item.id}
           renderItem={renderPostItem}
-          contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
+          // CORRECCIÓN 1: Aumentamos paddingBottom a 120 para que el último post
+          // suba por encima del botón flotante y no quede oculto.
+          contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View className="mt-10 items-center">
@@ -270,13 +273,18 @@ export function CommunitiesStudentMainScreen() {
           }
         />
 
+        {/* BOTÓN FLOTANTE (FAB) */}
         <TouchableOpacity
-          className={`absolute right-6 bottom-6 h-14 w-14 items-center justify-center rounded-full shadow-lg ${selectedCommunity.color}`}
+          // CORRECCIÓN 2: Cambiamos 'bottom-6' a 'bottom-20' para subirlo visualmente
+          // y evitar que choque con la barra de pestañas (Tabs) de abajo.
+          // Agregamos z-50 para asegurar que esté encima de todo.
+          className={`absolute right-6 bottom-20 z-50 h-14 w-14 items-center justify-center rounded-full shadow-lg ${selectedCommunity.color}`}
           onPress={() => setModalVisible(true)}
         >
           <Text className="mb-1 text-3xl font-light text-white">+</Text>
         </TouchableOpacity>
 
+        {/* Modal */}
         <Modal
           animationType="slide"
           transparent={true}
@@ -286,7 +294,10 @@ export function CommunitiesStudentMainScreen() {
           <View className="flex-1 justify-end bg-black/40">
             <View className="h-[70%] rounded-t-3xl bg-white p-5">
               <View className="mb-4 flex-row items-center justify-between">
-                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <TouchableOpacity
+                  onPress={() => setModalVisible(false)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
                   <Text className="text-base text-slate-500">Cancelar</Text>
                 </TouchableOpacity>
                 <Text className="text-lg font-bold text-slate-800">
@@ -319,7 +330,10 @@ export function CommunitiesStudentMainScreen() {
 
   // VISTA LISTA PRINCIPAL
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
+    <SafeAreaView
+      className="flex-1 bg-slate-50"
+      style={{ paddingTop: androidPaddingTop }}
+    >
       <StatusBar style="dark" />
       <View className="border-b border-slate-100 bg-white px-5 pt-6 pb-4">
         <Text className="text-3xl font-bold text-slate-900">Comunidades</Text>
