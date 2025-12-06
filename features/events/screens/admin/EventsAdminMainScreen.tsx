@@ -504,23 +504,52 @@ export function EventsAdminMainScreen() {
     if (!result?.data) return;
     if (hasScanned) return; // evita múltiples lecturas seguidas
 
-    const code = result.data as string;
+    const raw = result.data as string;
+
+    // 👇 Texto que vamos a mostrar y guardar en la lista
+    let displayText = raw;
+
+    // Intentar interpretar el QR como JSON con { nombre, id, correo }
+    try {
+      const maybeJson = JSON.parse(raw);
+
+      if (maybeJson && typeof maybeJson === 'object') {
+        const nombre =
+          (maybeJson as any).nombre ?? (maybeJson as any).name ?? undefined;
+        const id =
+          (maybeJson as any).id ?? (maybeJson as any).matricula ?? undefined;
+        const correo =
+          (maybeJson as any).correo ?? (maybeJson as any).email ?? undefined;
+
+        const parts: string[] = [];
+        if (nombre) parts.push(`Nombre: ${nombre}`);
+        if (id) parts.push(`ID: ${id}`);
+        if (correo) parts.push(`Correo: ${correo}`);
+
+        // Si logramos armar algo con los datos, lo usamos como texto formateado
+        if (parts.length > 0) {
+          displayText = parts.join(' • ');
+        }
+      }
+    } catch {
+      // No era JSON válido → dejamos el contenido tal cual
+    }
 
     setHasScanned(true);
-    setLastScannedCode(code);
+    setLastScannedCode(displayText);
 
     if (selectedEvent?.id) {
       setScannedGuestsByEvent((prev) => {
         const prevList = prev[selectedEvent.id] ?? [];
 
         // 👇 Si ya existe ese invitado en la lista de este evento, no lo agregamos
-        if (prevList.includes(code)) {
+        if (prevList.includes(displayText)) {
           return prev;
         }
 
         return {
           ...prev,
-          [selectedEvent.id]: [...prevList, code],
+          [selectedEvent.id]: [...prevList, displayText],
         };
       });
     }
