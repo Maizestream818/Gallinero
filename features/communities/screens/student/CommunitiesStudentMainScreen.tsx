@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,78 +7,144 @@ import {
   Modal,
   TextInput,
   SafeAreaView,
-  Alert,
   Image,
+  Pressable,
+  BackHandler,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { IconSymbol } from '@/components/ui/icon-symbol'; // Importamos tu componente de iconos
+import { IconSymbol } from '@/components/ui/icon-symbol';
 
 // ----------------------------------------------------------------------
-// 1. DUMMY DATA (Datos de prueba)
+// 1. DATOS INICIALES (Se usarán para resetear al recargar la página)
 // ----------------------------------------------------------------------
-const DUMMY_POSTS = [
+
+const DUMMY_COMMUNITIES = [
+  { 
+    id: 'c1', 
+    name: 'Salud', 
+    description: 'Tips de bienestar, campañas de vacunación y deporte.', 
+    iconName: 'house.fill', 
+    color: 'bg-emerald-500' 
+  },
+  { 
+    id: 'c2', 
+    name: 'Sistemas', 
+    description: 'Programación, hackathons y dudas técnicas.', 
+    iconName: 'chevron.left.forwardslash.chevron.right', 
+    color: 'bg-blue-500'
+  },
+  { 
+    id: 'c3', 
+    name: 'Música', 
+    description: 'Ensayos, conciertos y venta de instrumentos.', 
+    iconName: 'paperplane.fill', 
+    color: 'bg-purple-500' 
+  },
+  { 
+    id: 'c4', 
+    name: 'Comunicación', 
+    description: 'Noticias, debates y avisos de la facultad.', 
+    iconName: 'chevron.right', 
+    color: 'bg-orange-500' 
+  },
+];
+
+const INITIAL_POSTS = [
   {
-    id: '1',
+    id: 'p1',
     author: 'Sofía Martínez',
     role: 'Estudiante',
     time: 'Hace 20 min',
-    content: '¿Alguien tiene los apuntes de la clase de Matemáticas de hoy? No pude asistir 😢',
-    likes: 5,
-    comments: 3,
-    avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026024d',
+    content: '¿Alguien tiene los apuntes de la clase de hoy? No pude asistir 😢',
+    avatar: 'https://i.pravatar.cc/150?u=1',
   },
   {
-    id: '2',
+    id: 'p2',
     author: 'Centro de Estudiantes',
     role: 'Admin',
     time: 'Hace 2 horas',
-    content: '¡Atención! Mañana se suspenden actividades en el auditorio por mantenimiento.',
-    likes: 42,
-    comments: 0,
-    avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704d',
+    content: '¡Atención! Mañana mantenimiento en los laboratorios.',
+    avatar: 'https://i.pravatar.cc/150?u=2',
   },
   {
-    id: '3',
+    id: 'p3',
     author: 'Jorge Luis',
     role: 'Estudiante',
     time: 'Hace 5 horas',
-    content: 'Vendo calculadora científica casi nueva. Interesados mandar DM.',
-    likes: 2,
-    comments: 1,
-    avatar: 'https://i.pravatar.cc/150?u=a04258114e29026302d',
-  },
-  {
-    id: '4',
-    author: 'Ana Torres',
-    role: 'Delegada',
-    time: 'Ayer',
-    content: 'Chicos, recuerden que la fecha límite para el proyecto es el viernes.',
-    likes: 15,
-    comments: 8,
-    avatar: 'https://i.pravatar.cc/150?u=a04258114e29026702d',
+    content: 'Vendo calculadora científica. DM.',
+    avatar: 'https://i.pravatar.cc/150?u=3',
   },
 ];
 
 export function CommunitiesStudentMainScreen() {
-  // Estado para la visibilidad del modal
+  const [selectedCommunity, setSelectedCommunity] = useState<typeof DUMMY_COMMUNITIES[0] | null>(null);
+  
+  // ESTADO DE LOS POSTS: Inicia con los datos dummy, pero permite agregar nuevos
+  const [posts, setPosts] = useState(INITIAL_POSTS);
+
   const [modalVisible, setModalVisible] = useState(false);
   const [postText, setPostText] = useState('');
 
+  // Manejo del botón físico "Atrás" en Android
+  useEffect(() => {
+    const onBackPress = () => {
+      if (selectedCommunity) {
+        setSelectedCommunity(null);
+        return true; 
+      }
+      return false; 
+    };
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => subscription.remove();
+  }, [selectedCommunity]);
+
+  // ----------------------------------------------------------------------
+  // LÓGICA PARA CREAR EL NUEVO POST
+  // ----------------------------------------------------------------------
   const handlePublish = () => {
     if (postText.trim() === '') return;
-    
-    // Simulación de publicación
-    Alert.alert('Publicado', 'Tu post ha sido enviado a la comunidad.');
+
+    // 1. Crear el objeto del nuevo post
+    const newPost = {
+      id: Date.now().toString(), // ID único basado en la hora actual
+      author: 'Tú', // Nombre del usuario actual (simulado)
+      role: 'Estudiante',
+      time: 'Ahora',
+      content: postText,
+      avatar: 'https://i.pravatar.cc/150?u=me', // Avatar diferente para identificar que eres tú
+    };
+
+    // 2. Agregarlo al principio de la lista actual
+    setPosts([newPost, ...posts]);
+
+    // 3. Limpiar y cerrar
     setPostText('');
     setModalVisible(false);
   };
 
   // ----------------------------------------------------------------------
-  // RENDER ITEM: Componente visual de cada post
+  // RENDERIZADO
   // ----------------------------------------------------------------------
-  const renderPost = ({ item }: { item: typeof DUMMY_POSTS[0] }) => (
+
+  const renderCommunityItem = ({ item }: { item: typeof DUMMY_COMMUNITIES[0] }) => (
+    <Pressable 
+      onPress={() => setSelectedCommunity(item)}
+      className="mb-4 flex-row items-center rounded-2xl bg-white p-4 shadow-sm border border-slate-100 active:bg-slate-50"
+    >
+      <View className={`h-12 w-12 items-center justify-center rounded-full ${item.color} mr-4`}>
+        <IconSymbol name={item.iconName as any} size={24} color="white" />
+      </View>
+      <View className="flex-1">
+        <Text className="text-lg font-bold text-slate-800">{item.name}</Text>
+        <Text className="text-sm text-slate-500" numberOfLines={1}>{item.description}</Text>
+      </View>
+      <IconSymbol name="chevron.right" size={20} color="#cbd5e1" />
+    </Pressable>
+  );
+
+  const renderPostItem = ({ item }: { item: typeof INITIAL_POSTS[0] }) => (
     <View className="mb-4 rounded-2xl bg-white p-4 shadow-sm border border-slate-100">
-      {/* Encabezado del post */}
       <View className="flex-row items-center mb-3">
         <Image 
           source={{ uri: item.avatar }} 
@@ -89,95 +155,104 @@ export function CommunitiesStudentMainScreen() {
           <Text className="text-xs text-slate-500">{item.role} • {item.time}</Text>
         </View>
       </View>
-
-      {/* Contenido */}
-      <Text className="text-sm text-slate-700 leading-5 mb-3">
+      <Text className="text-sm text-slate-700 leading-5">
         {item.content}
       </Text>
-
-      {/* Pie del post (Botones de interacción) */}
-      <View className="flex-row border-t border-slate-100 pt-3">
-        <TouchableOpacity className="flex-row items-center mr-6">
-          {/* CORRECCIÓN: Se agrega color y cierre de etiqueta /> */}
-          <IconSymbol name="house.fill" size={16} color="#64748b" />
-          <Text className="ml-1 text-xs text-slate-500 font-medium">{item.likes} Me gusta</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity className="flex-row items-center">
-          <IconSymbol name="paperplane.fill" size={16} color="#64748b" />
-          <Text className="ml-1 text-xs text-slate-500 font-medium">{item.comments} Comentarios</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 
+  // VISTA DETALLE DE COMUNIDAD
+  if (selectedCommunity) {
+    return (
+      <SafeAreaView className="flex-1 bg-slate-50">
+        <StatusBar style="dark" />
+        
+        <View className="flex-row items-center px-4 pt-2 pb-4 bg-white border-b border-slate-100">
+          <TouchableOpacity 
+            onPress={() => setSelectedCommunity(null)}
+            className="p-2 mr-2 rounded-full bg-slate-100 active:bg-slate-200"
+          >
+            <IconSymbol 
+              name="chevron.right" 
+              size={24} 
+              color="#334155" 
+              style={{ transform: [{ rotate: '180deg' }] }}
+            />
+          </TouchableOpacity>
+          <View>
+            <Text className="text-xl font-bold text-slate-900">{selectedCommunity.name}</Text>
+            <Text className="text-xs text-slate-500">Comunidad Oficial</Text>
+          </View>
+        </View>
+
+        {/* AQUÍ PASAMOS EL ESTADO 'posts' EN LUGAR DE LA LISTA FIJA */}
+        <FlatList
+          data={posts}
+          keyExtractor={(item) => item.id}
+          renderItem={renderPostItem}
+          contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
+        />
+
+        <TouchableOpacity
+          className={`absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full shadow-lg ${selectedCommunity.color}`}
+          onPress={() => setModalVisible(true)}
+        >
+          <Text className="text-white text-3xl font-light mb-1">+</Text>
+        </TouchableOpacity>
+
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View className="flex-1 justify-end bg-black/40">
+            <View className="bg-white rounded-t-3xl p-5 h-[70%]">
+              <View className="flex-row justify-between items-center mb-4">
+                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                  <Text className="text-slate-500 text-base">Cancelar</Text>
+                </TouchableOpacity>
+                <Text className="font-bold text-lg text-slate-800">Publicar en {selectedCommunity.name}</Text>
+                <TouchableOpacity 
+                  onPress={handlePublish}
+                  disabled={postText.length === 0}
+                  className={`${postText.length > 0 ? selectedCommunity.color : 'bg-slate-300'} px-4 py-1.5 rounded-full`}
+                >
+                  <Text className="text-white font-bold text-sm">Publicar</Text>
+                </TouchableOpacity>
+              </View>
+              <TextInput
+                className="flex-1 text-base text-slate-700 text-start"
+                placeholder={`Comparte algo con el grupo de ${selectedCommunity.name}...`}
+                placeholderTextColor="#94a3b8"
+                multiline
+                textAlignVertical="top"
+                value={postText}
+                onChangeText={setPostText}
+                autoFocus
+              />
+            </View>
+          </View>
+        </Modal>
+      </SafeAreaView>
+    );
+  }
+
+  // VISTA LISTA PRINCIPAL
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
       <StatusBar style="dark" />
-
-      {/* Header */}
-      <View className="px-5 pt-4 pb-2">
-        <Text className="text-3xl font-bold text-slate-900">Comunidad 🐔</Text>
-        <Text className="text-slate-500">Lo último en el gallinero</Text>
+      <View className="px-5 pt-6 pb-4">
+        <Text className="text-3xl font-bold text-slate-900">Comunidades</Text>
+        <Text className="text-slate-500">Selecciona un grupo para ver sus posts</Text>
       </View>
-
-      {/* Lista de Publicaciones */}
       <FlatList
-        data={DUMMY_POSTS}
+        data={DUMMY_COMMUNITIES}
         keyExtractor={(item) => item.id}
-        renderItem={renderPost}
-        contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
-        showsVerticalScrollIndicator={false}
+        renderItem={renderCommunityItem}
+        contentContainerStyle={{ padding: 20 }}
       />
-
-      {/* Botón Flotante (FAB) para nuevo post */}
-      <TouchableOpacity
-        className="absolute bottom-6 right-6 h-14 w-14 bg-indigo-600 rounded-full items-center justify-center shadow-lg active:bg-indigo-700"
-        onPress={() => setModalVisible(true)}
-      >
-        <Text className="text-white text-3xl font-light mb-1">+</Text>
-      </TouchableOpacity>
-
-      {/* Modal de Nuevo Post */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View className="flex-1 justify-end bg-black/40">
-          <View className="bg-white rounded-t-3xl p-5 h-[70%]">
-            
-            {/* Header del Modal */}
-            <View className="flex-row justify-between items-center mb-4">
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Text className="text-slate-500 text-base">Cancelar</Text>
-              </TouchableOpacity>
-              <Text className="font-bold text-lg text-slate-800">Crear Publicación</Text>
-              <TouchableOpacity 
-                onPress={handlePublish}
-                disabled={postText.length === 0}
-                className={`${postText.length > 0 ? 'bg-indigo-600' : 'bg-slate-300'} px-4 py-1.5 rounded-full`}
-              >
-                <Text className="text-white font-bold text-sm">Publicar</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Input de Texto */}
-            <TextInput
-              className="flex-1 text-base text-slate-700 text-start"
-              placeholder="¿Qué está pasando en el gallinero?"
-              placeholderTextColor="#94a3b8"
-              multiline
-              textAlignVertical="top"
-              value={postText}
-              onChangeText={setPostText}
-              autoFocus
-            />
-          </View>
-        </View>
-      </Modal>
-
     </SafeAreaView>
   );
 }
