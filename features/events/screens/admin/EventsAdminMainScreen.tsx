@@ -12,6 +12,9 @@ import {
   View,
 } from 'react-native';
 
+// ⬅️ NUEVO: para saber si está en modo claro/oscuro
+import { useColorScheme } from '@/hooks/use-color-scheme';
+
 // Date / time picker
 import DateTimePicker, {
   DateTimePickerEvent,
@@ -287,6 +290,10 @@ const adminEventSectionsSeed: EventSection[] = [
 ];
 
 export function EventsAdminMainScreen() {
+  // ⬅️ NUEVO: detectamos modo claro/oscuro
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
   // Lista de eventos (solo seed, no se modifica)
   const [sections] = useState<EventSection[]>(adminEventSectionsSeed);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -562,14 +569,20 @@ export function EventsAdminMainScreen() {
       : [];
 
   return (
-    <View className="flex-1 bg-slate-900">
-      <StatusBar style="light" />
+    // ⬅️ MOD: fondo dinámico según modo oscuro/claro
+    <View className={`flex-1 ${isDark ? 'bg-slate-950' : 'bg-sky-100'}`}>
+      {/* ⬅️ MOD: StatusBar también se adapta */}
+      <StatusBar style={isDark ? 'light' : 'dark'} />
 
       {/* LISTA PRINCIPAL DE EVENTOS */}
       <SectionList
         sections={sections}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingBottom: 32,
+          paddingTop: 40, // espacio para que el título no toque la barra de notificaciones
+        }}
         renderItem={({ item }) => (
           <EventCard
             event={item}
@@ -579,16 +592,28 @@ export function EventsAdminMainScreen() {
           />
         )}
         renderSectionHeader={({ section }) => (
-          <Text className="mt-4 mb-2 text-sm font-bold text-slate-200">
+          <Text
+            className={`mt-4 mb-2 text-sm font-bold ${
+              isDark ? 'text-slate-200' : 'text-slate-700'
+            }`}
+          >
             {section.title}
           </Text>
         )}
         ListHeaderComponent={
           <View className="mb-2">
-            <Text className="text-2xl font-bold text-white">
+            <Text
+              className={`text-2xl font-bold ${
+                isDark ? 'text-white' : 'text-slate-900'
+              }`}
+            >
               Eventos (Admin)
             </Text>
-            <Text className="mt-1 text-xs text-slate-300">
+            <Text
+              className={`mt-1 text-xs ${
+                isDark ? 'text-slate-300' : 'text-slate-600'
+              }`}
+            >
               Hoy, esta semana y próximos eventos.
             </Text>
 
@@ -604,7 +629,11 @@ export function EventsAdminMainScreen() {
         }
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-16">
-            <Text className="text-base text-slate-300">
+            <Text
+              className={`text-base ${
+                isDark ? 'text-slate-300' : 'text-slate-700'
+              }`}
+            >
               No hay eventos programados.
             </Text>
           </View>
@@ -613,18 +642,32 @@ export function EventsAdminMainScreen() {
 
       {/* VENTANA DETALLE DEL EVENTO */}
       {!showCreateModal && selectedEvent && (
-        <View className="absolute inset-0 bg-slate-950/95">
+        <View
+          className={`absolute inset-0 ${
+            isDark ? 'bg-slate-950/95' : 'bg-sky-100/95'
+          }`}
+        >
           <View className="flex-1 justify-center px-4">
             <View
-              className="rounded-2xl border border-slate-700 bg-slate-900"
+              className={`rounded-2xl border ${
+                isDark
+                  ? 'border-slate-700 bg-slate-900'
+                  : 'border-sky-200 bg-white'
+              }`}
               style={{ maxHeight: 520 }}
             >
               <ScrollView contentContainerStyle={{ padding: 16 }}>
                 <Pressable
                   onPress={closeDetail}
-                  className="mb-2 self-end rounded-full bg-slate-800 px-4 py-2 active:opacity-80"
+                  className={`mb-2 self-end rounded-full px-4 py-2 active:opacity-80 ${
+                    isDark ? 'bg-slate-800' : 'bg-slate-200'
+                  }`}
                 >
-                  <Text className="text-xs font-semibold text-slate-100">
+                  <Text
+                    className={`text-xs font-semibold ${
+                      isDark ? 'text-slate-100' : 'text-slate-800'
+                    }`}
+                  >
                     Cerrar
                   </Text>
                 </Pressable>
@@ -635,25 +678,51 @@ export function EventsAdminMainScreen() {
                     : selectedEvent.date}
                 </Text>
 
-                <Text className="mt-2 text-2xl font-bold text-slate-50">
+                <Text
+                  className={`mt-2 text-2xl font-bold ${
+                    isDark ? 'text-slate-50' : 'text-slate-900'
+                  }`}
+                >
                   {selectedEvent.title}
                 </Text>
 
                 {selectedEvent.location ? (
-                  <Text className="mt-1 text-sm font-semibold text-slate-300">
+                  <Text
+                    className={`mt-1 text-sm font-semibold ${
+                      isDark ? 'text-slate-300' : 'text-slate-700'
+                    }`}
+                  >
                     {selectedEvent.location}
                   </Text>
                 ) : null}
 
-                <Text className="mt-4 text-sm leading-relaxed text-slate-200">
+                <Text
+                  className={`mt-4 text-sm leading-relaxed ${
+                    isDark ? 'text-slate-200' : 'text-slate-700'
+                  }`}
+                >
                   {selectedEvent.description ?? 'Sin descripción disponible.'}
                 </Text>
 
-                <View className="mt-6 rounded-2xl border border-slate-700 bg-slate-800 p-4">
-                  <Text className="text-sm font-semibold text-slate-100">
+                <View
+                  className={`mt-6 rounded-2xl border p-4 ${
+                    isDark
+                      ? 'border-slate-700 bg-slate-800'
+                      : 'border-sky-200 bg-sky-50'
+                  }`}
+                >
+                  <Text
+                    className={`text-sm font-semibold ${
+                      isDark ? 'text-slate-100' : 'text-slate-800'
+                    }`}
+                  >
                     Información adicional
                   </Text>
-                  <Text className="mt-2 text-xs text-slate-400">
+                  <Text
+                    className={`mt-2 text-xs ${
+                      isDark ? 'text-slate-400' : 'text-slate-600'
+                    }`}
+                  >
                     Aquí después puede agregar más campos: profesor, tipo de
                     evento, enlace a videollamada, etc.
                   </Text>
@@ -672,8 +741,18 @@ export function EventsAdminMainScreen() {
 
                   {/* Lista de invitados escaneados */}
                   {currentEventGuests.length > 0 && (
-                    <View className="mt-4 rounded-2xl border border-slate-700 bg-slate-800 p-3">
-                      <Text className="text-xs font-semibold text-slate-100">
+                    <View
+                      className={`mt-4 rounded-2xl border p-3 ${
+                        isDark
+                          ? 'border-slate-700 bg-slate-800'
+                          : 'border-sky-200 bg-sky-50'
+                      }`}
+                    >
+                      <Text
+                        className={`text-xs font-semibold ${
+                          isDark ? 'text-slate-100' : 'text-slate-800'
+                        }`}
+                      >
                         Invitados escaneados ({currentEventGuests.length})
                       </Text>
                       <View className="mt-2 gap-1">
@@ -684,7 +763,9 @@ export function EventsAdminMainScreen() {
                           >
                             <View className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                             <Text
-                              className="flex-1 text-[11px] text-slate-200"
+                              className={`flex-1 text-[11px] ${
+                                isDark ? 'text-slate-200' : 'text-slate-700'
+                              }`}
                               numberOfLines={1}
                             >
                               {code}
@@ -703,106 +784,185 @@ export function EventsAdminMainScreen() {
 
       {/* VENTANA FORMULARIO CREAR EVENTO */}
       {showCreateModal && (
-        <View className="absolute inset-0 bg-slate-950/95">
+        <View
+          className={`absolute inset-0 ${
+            isDark ? 'bg-slate-950/95' : 'bg-sky-100/95'
+          }`}
+        >
           <View className="flex-1 justify-center px-4">
             <View
-              className="rounded-2xl border border-slate-700 bg-slate-900"
+              className={`rounded-2xl border ${
+                isDark
+                  ? 'border-slate-700 bg-slate-900'
+                  : 'border-sky-200 bg-white'
+              }`}
               style={{ maxHeight: 620 }}
             >
               <ScrollView contentContainerStyle={{ padding: 16 }}>
                 <View className="mb-3 flex-row items-center justify-between">
-                  <Text className="text-base font-semibold text-slate-50">
+                  <Text
+                    className={`text-base font-semibold ${
+                      isDark ? 'text-slate-50' : 'text-slate-900'
+                    }`}
+                  >
                     Crear nuevo evento
                   </Text>
                   <Pressable
                     onPress={handleCancelCreate}
-                    className="rounded-full bg-slate-800 px-3 py-1 active:opacity-80"
+                    className={`rounded-full px-3 py-1 active:opacity-80 ${
+                      isDark ? 'bg-slate-800' : 'bg-slate-200'
+                    }`}
                   >
-                    <Text className="text-xs font-semibold text-slate-100">
+                    <Text
+                      className={`text-xs font-semibold ${
+                        isDark ? 'text-slate-100' : 'text-slate-800'
+                      }`}
+                    >
                       Cerrar
                     </Text>
                   </Pressable>
                 </View>
 
-                <Text className="mb-1 text-xs font-semibold text-slate-200">
+                <Text
+                  className={`mb-1 text-xs font-semibold ${
+                    isDark ? 'text-slate-200' : 'text-slate-700'
+                  }`}
+                >
                   Título
                 </Text>
                 <TextInput
-                  className="mb-3 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-50"
+                  className={`mb-3 rounded-xl border px-3 py-2 text-sm ${
+                    isDark
+                      ? 'border-slate-700 bg-slate-800 text-slate-50'
+                      : 'border-sky-200 bg-sky-50 text-slate-900'
+                  }`}
                   placeholder="Nombre del evento"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
                   value={newEvent.title}
                   onChangeText={(text) =>
                     setNewEvent((prev) => ({ ...prev, title: text }))
                   }
                 />
 
-                <Text className="mb-1 text-xs font-semibold text-slate-200">
+                <Text
+                  className={`mb-1 text-xs font-semibold ${
+                    isDark ? 'text-slate-200' : 'text-slate-700'
+                  }`}
+                >
                   Fecha
                 </Text>
                 <Pressable
                   onPress={() => setShowDatePicker(true)}
-                  className="mb-3 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2"
+                  className={`mb-3 rounded-xl border px-3 py-2 ${
+                    isDark
+                      ? 'border-slate-700 bg-slate-800'
+                      : 'border-sky-200 bg-sky-50'
+                  }`}
                 >
                   <Text
                     className={`text-sm ${
-                      newEvent.date ? 'text-slate-50' : 'text-slate-400'
+                      newEvent.date
+                        ? isDark
+                          ? 'text-slate-50'
+                          : 'text-slate-900'
+                        : isDark
+                          ? 'text-slate-400'
+                          : 'text-slate-500'
                     }`}
                   >
                     {newEvent.date || 'Seleccionar fecha'}
                   </Text>
                 </Pressable>
 
-                <Text className="mb-1 text-xs font-semibold text-slate-200">
+                <Text
+                  className={`mb-1 text-xs font-semibold ${
+                    isDark ? 'text-slate-200' : 'text-slate-700'
+                  }`}
+                >
                   Hora
                 </Text>
                 <Pressable
                   onPress={() => setShowTimePicker(true)}
-                  className="mb-3 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2"
+                  className={`mb-3 rounded-xl border px-3 py-2 ${
+                    isDark
+                      ? 'border-slate-700 bg-slate-800'
+                      : 'border-sky-200 bg-sky-50'
+                  }`}
                 >
                   <Text
                     className={`text-sm ${
-                      newEvent.time ? 'text-slate-50' : 'text-slate-400'
+                      newEvent.time
+                        ? isDark
+                          ? 'text-slate-50'
+                          : 'text-slate-900'
+                        : isDark
+                          ? 'text-slate-400'
+                          : 'text-slate-500'
                     }`}
                   >
                     {newEvent.time || 'Seleccionar hora'}
                   </Text>
                 </Pressable>
 
-                <Text className="mb-1 text-xs font-semibold text-slate-200">
+                <Text
+                  className={`mb-1 text-xs font-semibold ${
+                    isDark ? 'text-slate-200' : 'text-slate-700'
+                  }`}
+                >
                   Lugar
                 </Text>
                 <TextInput
-                  className="mb-3 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-50"
+                  className={`mb-3 rounded-xl border px-3 py-2 text-sm ${
+                    isDark
+                      ? 'border-slate-700 bg-slate-800 text-slate-50'
+                      : 'border-sky-200 bg-sky-50 text-slate-900'
+                  }`}
                   placeholder="Ej. Aula 2, Auditorio, etc."
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
                   value={newEvent.location}
                   onChangeText={(text) =>
                     setNewEvent((prev) => ({ ...prev, location: text }))
                   }
                 />
 
-                <Text className="mb-1 text-xs font-semibold text-slate-200">
+                <Text
+                  className={`mb-1 text-xs font-semibold ${
+                    isDark ? 'text-slate-200' : 'text-slate-700'
+                  }`}
+                >
                   Descripción
                 </Text>
                 <TextInput
-                  className="mb-3 h-24 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-50"
+                  className={`mb-3 h-24 rounded-xl border px-3 py-2 text-sm ${
+                    isDark
+                      ? 'border-slate-700 bg-slate-800 text-slate-50'
+                      : 'border-sky-200 bg-sky-50 text-slate-900'
+                  }`}
                   placeholder="Detalles del evento..."
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
                   value={newEvent.description}
                   multiline
                   textAlignVertical="top"
                   onChangeText={(text) =>
-                    setNewEvent((prev) => ({ ...prev, description: text }))
+                    setNewEvent((prev) => ({
+                      ...prev,
+                      description: text,
+                    }))
                   }
                 />
 
                 <View className="mt-6 flex-row justify-end gap-3">
                   <Pressable
                     onPress={handleCancelCreate}
-                    className="rounded-full border border-slate-600 px-4 py-2 active:opacity-80"
+                    className={`rounded-full border px-4 py-2 active:opacity-80 ${
+                      isDark ? 'border-slate-600' : 'border-slate-300'
+                    }`}
                   >
-                    <Text className="text-xs font-semibold text-slate-200">
+                    <Text
+                      className={`text-xs font-semibold ${
+                        isDark ? 'text-slate-200' : 'text-slate-700'
+                      }`}
+                    >
                       Cancelar
                     </Text>
                   </Pressable>

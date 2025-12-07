@@ -1,4 +1,5 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
@@ -128,6 +129,9 @@ const generateAllPosts = () => {
 const INITIAL_POSTS = generateAllPosts();
 
 export function CommunitiesAdminMainScreen() {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
   // Comunidades dinámicas
   const [communities, setCommunities] =
     useState<Community[]>(DUMMY_COMMUNITIES);
@@ -213,9 +217,6 @@ export function CommunitiesAdminMainScreen() {
     setNewCommunityName('');
     setNewCommunityDescription('');
     setCommunityModalVisible(false);
-
-    // Si quiere abrirla de inmediato:
-    // setSelectedCommunity(newCommunity);
   };
 
   const androidPaddingTop =
@@ -228,7 +229,9 @@ export function CommunitiesAdminMainScreen() {
   const renderCommunityItem = ({ item }: { item: Community }) => (
     <Pressable
       onPress={() => setSelectedCommunity(item)}
-      className="mb-4 flex-row items-center rounded-2xl border border-slate-700 bg-slate-900 p-4 shadow-sm active:bg-slate-800"
+      className={`mb-4 flex-row items-center rounded-2xl border p-4 shadow-sm active:opacity-80 ${
+        isDark ? 'border-slate-700 bg-slate-900' : 'border-sky-200 bg-white'
+      }`}
     >
       <View
         className={`mr-4 h-12 w-12 items-center justify-center rounded-full ${item.color}`}
@@ -236,32 +239,63 @@ export function CommunitiesAdminMainScreen() {
         <IconSymbol name={item.iconName as any} size={24} color="white" />
       </View>
       <View className="flex-1">
-        <Text className="text-lg font-bold text-slate-50">{item.name}</Text>
-        <Text className="text-sm text-slate-400" numberOfLines={1}>
+        <Text
+          className={`text-lg font-bold ${
+            isDark ? 'text-slate-50' : 'text-slate-900'
+          }`}
+        >
+          {item.name}
+        </Text>
+        <Text
+          className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}
+          numberOfLines={1}
+        >
           {item.description}
         </Text>
       </View>
-      <IconSymbol name="chevron.right" size={20} color="#64748b" />
+      <IconSymbol
+        name="chevron.right"
+        size={20}
+        color={isDark ? '#64748b' : '#0f172a'}
+      />
     </Pressable>
   );
 
   const renderPostItem = ({ item }: { item: (typeof INITIAL_POSTS)[0] }) => (
-    <View className="mb-4 rounded-2xl border border-slate-700 bg-slate-900 p-4 shadow-sm">
+    <View
+      className={`mb-4 rounded-2xl border p-4 shadow-sm ${
+        isDark ? 'border-slate-700 bg-slate-900' : 'border-sky-200 bg-white'
+      }`}
+    >
       <View className="mb-3 flex-row items-center">
         <Image
           source={{ uri: item.avatar }}
           className="h-10 w-10 rounded-full bg-slate-700"
         />
         <View className="ml-3">
-          <Text className="text-base font-bold text-slate-50">
+          <Text
+            className={`text-base font-bold ${
+              isDark ? 'text-slate-50' : 'text-slate-900'
+            }`}
+          >
             {item.author}
           </Text>
-          <Text className="text-xs text-slate-400">
+          <Text
+            className={`text-xs ${
+              isDark ? 'text-slate-400' : 'text-slate-500'
+            }`}
+          >
             {item.role} • {item.time}
           </Text>
         </View>
       </View>
-      <Text className="text-sm leading-5 text-slate-200">{item.content}</Text>
+      <Text
+        className={`text-sm leading-5 ${
+          isDark ? 'text-slate-200' : 'text-slate-700'
+        }`}
+      >
+        {item.content}
+      </Text>
     </View>
   );
 
@@ -275,30 +309,46 @@ export function CommunitiesAdminMainScreen() {
 
     return (
       <SafeAreaView
-        className="flex-1 bg-slate-900"
+        className={`flex-1 ${isDark ? 'bg-slate-950' : 'bg-sky-100'}`}
         style={{ paddingTop: androidPaddingTop }}
       >
-        <StatusBar style="light" />
+        <StatusBar style={isDark ? 'light' : 'dark'} />
 
         {/* Header Detalle */}
-        <View className="flex-row items-center border-b border-slate-800 bg-slate-900 px-4 pt-2 pb-4">
+        <View
+          className={`flex-row items-center border-b px-4 pt-2 pb-4 ${
+            isDark
+              ? 'border-slate-800 bg-slate-950'
+              : 'border-sky-200 bg-sky-100'
+          }`}
+        >
           <TouchableOpacity
             onPress={() => setSelectedCommunity(null)}
             hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-            className="mr-3 rounded-full bg-slate-800 p-2 active:bg-slate-700"
+            className={`mr-3 rounded-full p-2 active:opacity-80 ${
+              isDark ? 'bg-slate-800' : 'bg-slate-200'
+            }`}
           >
             <IconSymbol
               name="chevron.right"
               size={24}
-              color="#e2e8f0"
+              color={isDark ? '#e2e8f0' : '#0f172a'}
               style={{ transform: [{ rotate: '180deg' }] }}
             />
           </TouchableOpacity>
           <View>
-            <Text className="text-xl font-bold text-slate-50">
+            <Text
+              className={`text-xl font-bold ${
+                isDark ? 'text-slate-50' : 'text-slate-900'
+              }`}
+            >
               {selectedCommunity.name}
             </Text>
-            <Text className="text-xs text-slate-400">
+            <Text
+              className={`text-xs ${
+                isDark ? 'text-slate-400' : 'text-slate-600'
+              }`}
+            >
               Panel de administración
             </Text>
           </View>
@@ -313,10 +363,18 @@ export function CommunitiesAdminMainScreen() {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View className="mt-10 items-center">
-              <Text className="mb-2 text-center text-slate-400">
+              <Text
+                className={`mb-2 text-center ${
+                  isDark ? 'text-slate-400' : 'text-slate-600'
+                }`}
+              >
                 No hay publicaciones aún.
               </Text>
-              <Text className="text-center text-xs text-slate-500">
+              <Text
+                className={`text-center text-xs ${
+                  isDark ? 'text-slate-500' : 'text-slate-500'
+                }`}
+              >
                 ¡Cree la primera publicación!
               </Text>
             </View>
@@ -338,16 +396,36 @@ export function CommunitiesAdminMainScreen() {
           visible={modalVisible}
           onRequestClose={() => setModalVisible(false)}
         >
-          <View className="flex-1 justify-end bg-slate-950/90">
-            <View className="h-[70%] rounded-t-3xl border border-slate-800 bg-slate-900 p-5">
+          <View
+            className={`flex-1 justify-end ${
+              isDark ? 'bg-slate-950/90' : 'bg-sky-100/95'
+            }`}
+          >
+            <View
+              className={`h-[70%] rounded-t-3xl border p-5 ${
+                isDark
+                  ? 'border-slate-800 bg-slate-900'
+                  : 'border-sky-200 bg-white'
+              }`}
+            >
               <View className="mb-4 flex-row items-center justify-between">
                 <TouchableOpacity
                   onPress={() => setModalVisible(false)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Text className="text-base text-slate-300">Cancelar</Text>
+                  <Text
+                    className={`text-base ${
+                      isDark ? 'text-slate-300' : 'text-slate-600'
+                    }`}
+                  >
+                    Cancelar
+                  </Text>
                 </TouchableOpacity>
-                <Text className="text-lg font-bold text-slate-50">
+                <Text
+                  className={`text-lg font-bold ${
+                    isDark ? 'text-slate-50' : 'text-slate-900'
+                  }`}
+                >
                   Publicar en {selectedCommunity.name}
                 </Text>
                 <TouchableOpacity
@@ -356,16 +434,20 @@ export function CommunitiesAdminMainScreen() {
                   className={`rounded-full px-4 py-1.5 ${
                     postText.length > 0
                       ? selectedCommunity.color
-                      : 'bg-slate-700'
+                      : isDark
+                        ? 'bg-slate-700'
+                        : 'bg-slate-300'
                   }`}
                 >
                   <Text className="text-sm font-bold text-white">Publicar</Text>
                 </TouchableOpacity>
               </View>
               <TextInput
-                className="flex-1 text-start text-base text-slate-50"
+                className={`flex-1 text-start text-base ${
+                  isDark ? 'text-slate-50' : 'text-slate-900'
+                }`}
                 placeholder={`Comparte algo con la comunidad de ${selectedCommunity.name}...`}
-                placeholderTextColor="#64748b"
+                placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
                 multiline
                 textAlignVertical="top"
                 value={postText}
@@ -384,38 +466,54 @@ export function CommunitiesAdminMainScreen() {
   // ----------------------------------------------------------------------
   return (
     <SafeAreaView
-      className="flex-1 bg-slate-900"
+      className={`flex-1 ${isDark ? 'bg-slate-950' : 'bg-sky-100'}`}
       style={{ paddingTop: androidPaddingTop }}
     >
-      <StatusBar style="light" />
-
-      <View className="border-b border-slate-800 bg-slate-900 px-5 pt-6 pb-4">
-        <Text className="text-3xl font-bold text-white">
-          Comunidades (Admin)
-        </Text>
-        <Text className="mt-1 text-xs text-slate-300">
-          Administre las {communities.length} comunidades disponibles
-        </Text>
-
-        {/* Botón verde al estilo "Agregar evento" */}
-        <Pressable
-          onPress={() => setCommunityModalVisible(true)}
-          className="mt-3 self-start rounded-full bg-emerald-600 px-4 py-2 active:opacity-80"
-        >
-          <Text className="text-xs font-semibold text-white">
-            Crear comunidad
-          </Text>
-        </Pressable>
-      </View>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
 
       <FlatList
         data={communities}
         keyExtractor={(item) => item.id}
         renderItem={renderCommunityItem}
-        contentContainerStyle={{ padding: 20, paddingBottom: 32 }}
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingBottom: 32,
+          paddingTop: 20,
+        }}
         initialNumToRender={10}
         maxToRenderPerBatch={10}
         windowSize={5}
+        ListHeaderComponent={
+          <View
+            className={`mb-3 border-b pb-4 ${
+              isDark ? 'border-slate-800' : 'border-sky-200'
+            }`}
+          >
+            <Text
+              className={`text-3xl font-bold ${
+                isDark ? 'text-white' : 'text-slate-900'
+              }`}
+            >
+              Comunidades (Admin)
+            </Text>
+            <Text
+              className={`mt-1 text-xs ${
+                isDark ? 'text-slate-300' : 'text-slate-600'
+              }`}
+            >
+              Administre las {communities.length} comunidades disponibles
+            </Text>
+
+            <Pressable
+              onPress={() => setCommunityModalVisible(true)}
+              className="mt-3 self-start rounded-full bg-emerald-600 px-4 py-2 active:opacity-80"
+            >
+              <Text className="text-xs font-semibold text-white">
+                Crear comunidad
+              </Text>
+            </Pressable>
+          </View>
+        }
       />
 
       {/* Modal Crear Comunidad */}
@@ -425,16 +523,36 @@ export function CommunitiesAdminMainScreen() {
         visible={communityModalVisible}
         onRequestClose={() => setCommunityModalVisible(false)}
       >
-        <View className="flex-1 justify-end bg-slate-950/90">
-          <View className="h-[65%] rounded-t-3xl border border-slate-800 bg-slate-900 p-5">
+        <View
+          className={`flex-1 justify-end ${
+            isDark ? 'bg-slate-950/90' : 'bg-sky-100/95'
+          }`}
+        >
+          <View
+            className={`h-[65%] rounded-t-3xl border p-5 ${
+              isDark
+                ? 'border-slate-800 bg-slate-900'
+                : 'border-sky-200 bg-white'
+            }`}
+          >
             <View className="mb-4 flex-row items-center justify-between">
               <TouchableOpacity
                 onPress={() => setCommunityModalVisible(false)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Text className="text-base text-slate-300">Cancelar</Text>
+                <Text
+                  className={`text-base ${
+                    isDark ? 'text-slate-300' : 'text-slate-600'
+                  }`}
+                >
+                  Cancelar
+                </Text>
               </TouchableOpacity>
-              <Text className="text-lg font-bold text-slate-50">
+              <Text
+                className={`text-lg font-bold ${
+                  isDark ? 'text-slate-50' : 'text-slate-900'
+                }`}
+              >
                 Crear nueva comunidad
               </Text>
               <TouchableOpacity
@@ -447,7 +565,9 @@ export function CommunitiesAdminMainScreen() {
                   newCommunityName.trim().length > 0 &&
                   newCommunityDescription.trim().length > 0
                     ? 'bg-emerald-600'
-                    : 'bg-slate-700'
+                    : isDark
+                      ? 'bg-slate-700'
+                      : 'bg-slate-300'
                 }`}
               >
                 <Text className="text-sm font-bold text-white">Crear</Text>
@@ -456,16 +576,24 @@ export function CommunitiesAdminMainScreen() {
 
             <View className="gap-4">
               <TextInput
-                className="rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 text-base text-slate-50"
+                className={`rounded-2xl border px-4 py-3 text-base ${
+                  isDark
+                    ? 'border-slate-700 bg-slate-800 text-slate-50'
+                    : 'border-sky-200 bg-sky-50 text-slate-900'
+                }`}
                 placeholder="Nombre de la comunidad"
-                placeholderTextColor="#64748b"
+                placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
                 value={newCommunityName}
                 onChangeText={setNewCommunityName}
               />
               <TextInput
-                className="h-32 rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 text-base text-slate-50"
+                className={`h-32 rounded-2xl border px-4 py-3 text-base ${
+                  isDark
+                    ? 'border-slate-700 bg-slate-800 text-slate-50'
+                    : 'border-sky-200 bg-sky-50 text-slate-900'
+                }`}
                 placeholder="Descripción de la comunidad"
-                placeholderTextColor="#64748b"
+                placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
                 value={newCommunityDescription}
                 onChangeText={setNewCommunityDescription}
                 multiline

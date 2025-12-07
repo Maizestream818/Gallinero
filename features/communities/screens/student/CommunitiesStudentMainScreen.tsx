@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import {
   BackHandler,
   FlatList,
@@ -87,6 +88,7 @@ const AUTHORS = [
   'Valentina R.',
   'David P.',
 ];
+
 const CONTENTS = [
   '¿Alguien tiene los apuntes de la última clase? No pude asistir 😢',
   '¡Atención! Mañana hay mantenimiento en las instalaciones.',
@@ -128,6 +130,9 @@ const generateAllPosts = () => {
 const INITIAL_POSTS = generateAllPosts();
 
 export function CommunitiesStudentMainScreen() {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(
     null,
   );
@@ -178,7 +183,9 @@ export function CommunitiesStudentMainScreen() {
   const renderCommunityItem = ({ item }: { item: Community }) => (
     <Pressable
       onPress={() => setSelectedCommunity(item)}
-      className="mb-4 flex-row items-center rounded-2xl border border-slate-700 bg-slate-900 p-4 shadow-sm active:bg-slate-800"
+      className={`mb-4 flex-row items-center rounded-2xl border p-4 shadow-sm active:opacity-80 ${
+        isDark ? 'border-slate-700 bg-slate-900' : 'border-sky-200 bg-white'
+      }`}
     >
       <View
         className={`mr-4 h-12 w-12 items-center justify-center rounded-full ${item.color}`}
@@ -186,32 +193,63 @@ export function CommunitiesStudentMainScreen() {
         <IconSymbol name={item.iconName as any} size={24} color="white" />
       </View>
       <View className="flex-1">
-        <Text className="text-lg font-bold text-slate-50">{item.name}</Text>
-        <Text className="text-sm text-slate-400" numberOfLines={1}>
+        <Text
+          className={`text-lg font-bold ${
+            isDark ? 'text-slate-50' : 'text-slate-900'
+          }`}
+        >
+          {item.name}
+        </Text>
+        <Text
+          className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}
+          numberOfLines={1}
+        >
           {item.description}
         </Text>
       </View>
-      <IconSymbol name="chevron.right" size={20} color="#64748b" />
+      <IconSymbol
+        name="chevron.right"
+        size={20}
+        color={isDark ? '#64748b' : '#0f172a'}
+      />
     </Pressable>
   );
 
   const renderPostItem = ({ item }: { item: (typeof INITIAL_POSTS)[0] }) => (
-    <View className="mb-4 rounded-2xl border border-slate-700 bg-slate-900 p-4 shadow-sm">
+    <View
+      className={`mb-4 rounded-2xl border p-4 shadow-sm ${
+        isDark ? 'border-slate-700 bg-slate-900' : 'border-sky-200 bg-white'
+      }`}
+    >
       <View className="mb-3 flex-row items-center">
         <Image
           source={{ uri: item.avatar }}
           className="h-10 w-10 rounded-full bg-slate-700"
         />
         <View className="ml-3">
-          <Text className="text-base font-bold text-slate-50">
+          <Text
+            className={`text-base font-bold ${
+              isDark ? 'text-slate-50' : 'text-slate-900'
+            }`}
+          >
             {item.author}
           </Text>
-          <Text className="text-xs text-slate-400">
+          <Text
+            className={`text-xs ${
+              isDark ? 'text-slate-400' : 'text-slate-500'
+            }`}
+          >
             {item.role} • {item.time}
           </Text>
         </View>
       </View>
-      <Text className="text-sm leading-5 text-slate-200">{item.content}</Text>
+      <Text
+        className={`text-sm leading-5 ${
+          isDark ? 'text-slate-200' : 'text-slate-700'
+        }`}
+      >
+        {item.content}
+      </Text>
     </View>
   );
 
@@ -223,30 +261,48 @@ export function CommunitiesStudentMainScreen() {
 
     return (
       <SafeAreaView
-        className="flex-1 bg-slate-900"
+        className={`flex-1 ${isDark ? 'bg-slate-950' : 'bg-sky-100'}`}
         style={{ paddingTop: androidPaddingTop }}
       >
-        <StatusBar style="light" />
+        <StatusBar style={isDark ? 'light' : 'dark'} />
 
         {/* Header Detalle */}
-        <View className="flex-row items-center border-b border-slate-800 bg-slate-900 px-4 pt-2 pb-4">
+        <View
+          className={`flex-row items-center border-b px-4 pt-2 pb-4 ${
+            isDark
+              ? 'border-slate-800 bg-slate-950'
+              : 'border-sky-200 bg-sky-100'
+          }`}
+        >
           <TouchableOpacity
             onPress={() => setSelectedCommunity(null)}
             hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-            className="mr-3 rounded-full bg-slate-800 p-2 active:bg-slate-700"
+            className={`mr-3 rounded-full p-2 active:opacity-80 ${
+              isDark ? 'bg-slate-800' : 'bg-slate-200'
+            }`}
           >
             <IconSymbol
               name="chevron.right"
               size={24}
-              color="#e2e8f0"
+              color={isDark ? '#e2e8f0' : '#0f172a'}
               style={{ transform: [{ rotate: '180deg' }] }}
             />
           </TouchableOpacity>
           <View>
-            <Text className="text-xl font-bold text-slate-50">
+            <Text
+              className={`text-xl font-bold ${
+                isDark ? 'text-slate-50' : 'text-slate-900'
+              }`}
+            >
               {selectedCommunity.name}
             </Text>
-            <Text className="text-xs text-slate-400">Comunidad oficial</Text>
+            <Text
+              className={`text-xs ${
+                isDark ? 'text-slate-400' : 'text-slate-600'
+              }`}
+            >
+              Comunidad oficial
+            </Text>
           </View>
         </View>
 
@@ -259,10 +315,18 @@ export function CommunitiesStudentMainScreen() {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View className="mt-10 items-center">
-              <Text className="mb-2 text-center text-slate-400">
+              <Text
+                className={`mb-2 text-center ${
+                  isDark ? 'text-slate-400' : 'text-slate-600'
+                }`}
+              >
                 No hay publicaciones aún.
               </Text>
-              <Text className="text-center text-xs text-slate-500">
+              <Text
+                className={`text-center text-xs ${
+                  isDark ? 'text-slate-500' : 'text-slate-500'
+                }`}
+              >
                 ¡Sé el primero en escribir!
               </Text>
             </View>
@@ -284,16 +348,36 @@ export function CommunitiesStudentMainScreen() {
           visible={modalVisible}
           onRequestClose={() => setModalVisible(false)}
         >
-          <View className="flex-1 justify-end bg-slate-950/90">
-            <View className="h-[70%] rounded-t-3xl border border-slate-800 bg-slate-900 p-5">
+          <View
+            className={`flex-1 justify-end ${
+              isDark ? 'bg-slate-950/90' : 'bg-sky-100/95'
+            }`}
+          >
+            <View
+              className={`h-[70%] rounded-t-3xl border p-5 ${
+                isDark
+                  ? 'border-slate-800 bg-slate-900'
+                  : 'border-sky-200 bg-white'
+              }`}
+            >
               <View className="mb-4 flex-row items-center justify-between">
                 <TouchableOpacity
                   onPress={() => setModalVisible(false)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Text className="text-base text-slate-300">Cancelar</Text>
+                  <Text
+                    className={`text-base ${
+                      isDark ? 'text-slate-300' : 'text-slate-600'
+                    }`}
+                  >
+                    Cancelar
+                  </Text>
                 </TouchableOpacity>
-                <Text className="text-lg font-bold text-slate-50">
+                <Text
+                  className={`text-lg font-bold ${
+                    isDark ? 'text-slate-50' : 'text-slate-900'
+                  }`}
+                >
                   Publicar en {selectedCommunity.name}
                 </Text>
                 <TouchableOpacity
@@ -302,16 +386,20 @@ export function CommunitiesStudentMainScreen() {
                   className={`rounded-full px-4 py-1.5 ${
                     postText.length > 0
                       ? selectedCommunity.color
-                      : 'bg-slate-700'
+                      : isDark
+                        ? 'bg-slate-700'
+                        : 'bg-slate-300'
                   }`}
                 >
                   <Text className="text-sm font-bold text-white">Publicar</Text>
                 </TouchableOpacity>
               </View>
               <TextInput
-                className="flex-1 text-start text-base text-slate-50"
+                className={`flex-1 text-start text-base ${
+                  isDark ? 'text-slate-50' : 'text-slate-900'
+                }`}
                 placeholder={`Comparte algo con el grupo de ${selectedCommunity.name}...`}
-                placeholderTextColor="#64748b"
+                placeholderTextColor={isDark ? '#64748b' : '#94a3b8'}
                 multiline
                 textAlignVertical="top"
                 value={postText}
@@ -328,13 +416,27 @@ export function CommunitiesStudentMainScreen() {
   // VISTA LISTA PRINCIPAL
   return (
     <SafeAreaView
-      className="flex-1 bg-slate-900"
+      className={`flex-1 ${isDark ? 'bg-slate-950' : 'bg-sky-100'}`}
       style={{ paddingTop: androidPaddingTop }}
     >
-      <StatusBar style="light" />
-      <View className="border-b border-slate-800 bg-slate-900 px-5 pt-6 pb-4">
-        <Text className="text-3xl font-bold text-white">Comunidades</Text>
-        <Text className="mt-1 text-xs text-slate-300">
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <View
+        className={`border-b px-5 pt-6 pb-4 ${
+          isDark ? 'border-slate-800 bg-slate-950' : 'border-sky-200 bg-sky-100'
+        }`}
+      >
+        <Text
+          className={`text-3xl font-bold ${
+            isDark ? 'text-white' : 'text-slate-900'
+          }`}
+        >
+          Comunidades
+        </Text>
+        <Text
+          className={`mt-1 text-xs ${
+            isDark ? 'text-slate-300' : 'text-slate-600'
+          }`}
+        >
           Explora los {DUMMY_COMMUNITIES.length} grupos disponibles
         </Text>
       </View>
