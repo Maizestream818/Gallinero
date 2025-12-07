@@ -22,7 +22,7 @@ export default function TabLayout() {
         options={{
           title: 'Eventos',
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
+            <IconSymbol size={28} name="calendar" color={color} />
           ),
         }}
       />
@@ -31,7 +31,7 @@ export default function TabLayout() {
         options={{
           title: 'Comunidades',
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="paperplane.fill" color={color} />
+            <IconSymbol size={28} name="person.3" color={color} />
           ),
         }}
       />
@@ -40,7 +40,7 @@ export default function TabLayout() {
         options={{
           title: 'Usuario',
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="paperplane.fill" color={color} />
+            <IconSymbol size={28} name="person.crop.circle" color={color} />
           ),
         }}
       />
