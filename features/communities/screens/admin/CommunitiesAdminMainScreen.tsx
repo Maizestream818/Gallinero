@@ -1,8 +1,10 @@
+// features/events/screens/admin/CommunitiesAdminMainScreen.tsx
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
+  Alert,
   BackHandler,
   FlatList,
   Image,
@@ -17,8 +19,41 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+// ⬅️ NUEVO: cliente Back4App (mismo que en Eventos)
+import {
+  parseCreate,
+  parseFind,
+  type ParseBaseFields,
+} from '@/lib/parseClient';
+
 // ----------------------------------------------------------------------
-// 1. GENERADOR DE 14 COMUNIDADES
+// 0. TIPOS
+// ----------------------------------------------------------------------
+
+type Community = {
+  id: string;
+  name: string;
+  description: string;
+  iconName: string;
+  color: string;
+};
+
+type CommunityPost = {
+  id: string;
+  communityId: string;
+  author: string;
+  role: string;
+  time: string;
+  content: string;
+  avatar: string;
+};
+
+// Cómo vienen de Back4App (todos opcionales + objectId, createdAt, updatedAt)
+type CommunityRecord = ParseBaseFields & Partial<Community>;
+type CommunityPostRecord = ParseBaseFields & Partial<CommunityPost>;
+
+// ----------------------------------------------------------------------
+// 1. PLANTILLAS DE COMUNIDADES (para icono / color)
 // ----------------------------------------------------------------------
 
 const COMMUNITY_TYPES = [
@@ -60,98 +95,92 @@ const COMMUNITY_TYPES = [
   },
 ];
 
-const DUMMY_COMMUNITIES = Array.from({ length: 14 }, (_, i) => {
-  const type = COMMUNITY_TYPES[i % COMMUNITY_TYPES.length];
-  return {
-    id: `c${i + 1}`,
-    name: `${type.name} ${Math.floor(i / 6) + 1}`,
-    description: `${type.desc} - Grupo oficial #${i + 1}`,
-    iconName: type.icon,
-    color: type.color,
-  };
-});
-
-type Community = (typeof DUMMY_COMMUNITIES)[0];
-
 // ----------------------------------------------------------------------
-// 2. GENERADOR DE POSTS (30 por comunidad)
+// 2. COMPONENTE PRINCIPAL
 // ----------------------------------------------------------------------
-
-const AUTHORS = [
-  'Sofía Martínez',
-  'Jorge Luis',
-  'Ana Torres',
-  'Carlos Ruiz',
-  'Lucía Fernández',
-  'Miguel Ángel',
-  'Valentina R.',
-  'David P.',
-];
-
-const CONTENTS = [
-  '¿Alguien tiene los apuntes de la última clase? No pude asistir 😢',
-  '¡Atención! Mañana hay mantenimiento en las instalaciones.',
-  'Vendo calculadora científica en buen estado. Interesados al DM.',
-  '¿Saben si la cafetería está abierta hoy?',
-  'Organizando grupo de estudio para los finales. ¿Quién se apunta?',
-  'Perdí mi credencial cerca del edificio B, si alguien la ve avísenme.',
-  'Recuerden que el viernes es la fecha límite para el proyecto.',
-  'Torneo de fútbol este sábado, inscriban a sus equipos ⚽',
-  '¿Alguien para compartir locker este semestre?',
-  'Busco libro de anatomía usado, precio razonable.',
-  'Se busca bajista para banda de rock universitario 🎸',
-  '¿Alguien sabe a qué hora abre la biblioteca mañana?',
-];
-
-const generateAllPosts = () => {
-  const allPosts: any[] = [];
-  let postIdCounter = 1;
-
-  DUMMY_COMMUNITIES.forEach((community) => {
-    const numPosts = 30;
-
-    for (let i = 0; i < numPosts; i++) {
-      allPosts.push({
-        id: `p${postIdCounter++}`,
-        communityId: community.id,
-        author: AUTHORS[Math.floor(Math.random() * AUTHORS.length)],
-        role: 'Estudiante',
-        time: `Hace ${Math.floor(Math.random() * 23) + 1} horas`,
-        content: CONTENTS[Math.floor(Math.random() * CONTENTS.length)],
-        avatar: `https://i.pravatar.cc/150?u=${postIdCounter}`,
-      });
-    }
-  });
-
-  return allPosts;
-};
-
-const INITIAL_POSTS = generateAllPosts();
 
 export function CommunitiesAdminMainScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
-  // Comunidades dinámicas
-  const [communities, setCommunities] =
-    useState<Community[]>(DUMMY_COMMUNITIES);
+  // Comunidades y posts desde Back4App
+  const [communities, setCommunities] = useState<Community[]>([]);
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
 
-  // Comunidad seleccionada (detalle)
+  // Estados generales
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(
     null,
   );
-
-  // Posts
-  const [posts, setPosts] = useState(INITIAL_POSTS);
-
-  // Modal publicar post
-  const [modalVisible, setModalVisible] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false); // publicar post
   const [postText, setPostText] = useState('');
-
-  // Modal crear comunidad
-  const [communityModalVisible, setCommunityModalVisible] = useState(false);
+  const [communityModalVisible, setCommunityModalVisible] = useState(false); // crear comunidad
   const [newCommunityName, setNewCommunityName] = useState('');
   const [newCommunityDescription, setNewCommunityDescription] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // ----------------------------------------------------------------------
+  // 3. CARGAR DATOS DESDE BACK4APP
+  // ----------------------------------------------------------------------
+
+  const loadDataFromDatabase = async () => {
+    setErrorMsg(null);
+    setIsLoading(true);
+    try {
+      const [communityResults, postResults] = await Promise.all([
+        parseFind<CommunityRecord>('Community'),
+        parseFind<CommunityPostRecord>('CommunityPost'),
+      ]);
+
+      const mappedCommunities: Community[] = communityResults.map((item, i) => {
+        // fallback de icono/color por si no están guardados
+        const type = COMMUNITY_TYPES[i % COMMUNITY_TYPES.length];
+
+        return {
+          id: item.objectId,
+          name: item.name ?? `Comunidad ${i + 1}`,
+          description: item.description ?? type.desc,
+          iconName: item.iconName ?? type.icon,
+          color: item.color ?? type.color,
+        };
+      });
+
+      const mappedPosts: CommunityPost[] = postResults.map((item) => ({
+        id: item.objectId,
+        communityId: item.communityId ?? '',
+        author: item.author ?? 'Desconocido',
+        role: item.role ?? 'Miembro',
+        time: item.time ?? 'Hace un momento',
+        content: item.content ?? '',
+        avatar:
+          item.avatar ??
+          'https://i.pravatar.cc/150?u=gallinero-community-default',
+      }));
+
+      setCommunities(mappedCommunities);
+      setPosts(mappedPosts);
+    } catch (err: any) {
+      console.error('Error cargando comunidades/posts', err);
+      setErrorMsg(String(err?.message ?? err));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDataFromDatabase();
+  }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadDataFromDatabase();
+    setRefreshing(false);
+  };
+
+  // ----------------------------------------------------------------------
+  // 4. BACK BUTTON ANDROID (volver desde detalle)
+  // ----------------------------------------------------------------------
 
   useEffect(() => {
     const onBackPress = () => {
@@ -171,30 +200,43 @@ export function CommunitiesAdminMainScreen() {
   }, [selectedCommunity]);
 
   // ----------------------------------------------------------------------
-  // PUBLICAR POST EN COMUNIDAD
+  // 5. PUBLICAR POST EN COMUNIDAD
   // ----------------------------------------------------------------------
-  const handlePublish = () => {
+
+  const handlePublish = async () => {
     if (postText.trim() === '' || !selectedCommunity) return;
 
-    const newPost = {
-      id: Date.now().toString(),
+    const payload = {
       communityId: selectedCommunity.id,
       author: 'Tú',
       role: 'Administrador',
       time: 'Ahora',
-      content: postText,
+      content: postText.trim(),
       avatar: 'https://i.pravatar.cc/150?u=admin',
     };
 
-    setPosts([newPost, ...posts]);
-    setPostText('');
-    setModalVisible(false);
+    try {
+      const created = await parseCreate('CommunityPost', payload);
+
+      const newPost: CommunityPost = {
+        id: created.objectId,
+        ...payload,
+      };
+
+      setPosts((prev) => [newPost, ...prev]);
+      setPostText('');
+      setModalVisible(false);
+    } catch (err: any) {
+      console.error('Error publicando post', err);
+      Alert.alert('Error', `Error al publicar: ${err?.message ?? err}`);
+    }
   };
 
   // ----------------------------------------------------------------------
-  // CREAR NUEVA COMUNIDAD
+  // 6. CREAR NUEVA COMUNIDAD
   // ----------------------------------------------------------------------
-  const handleCreateCommunity = () => {
+
+  const handleCreateCommunity = async () => {
     const name = newCommunityName.trim();
     const description = newCommunityDescription.trim();
 
@@ -205,25 +247,36 @@ export function CommunitiesAdminMainScreen() {
     const typeIndex = communities.length % COMMUNITY_TYPES.length;
     const type = COMMUNITY_TYPES[typeIndex];
 
-    const newCommunity: Community = {
-      id: `c${communities.length + 1}`,
+    const payload = {
       name,
       description,
       iconName: type.icon,
       color: type.color,
     };
 
-    setCommunities([newCommunity, ...communities]);
-    setNewCommunityName('');
-    setNewCommunityDescription('');
-    setCommunityModalVisible(false);
+    try {
+      const created = await parseCreate('Community', payload);
+
+      const newCommunity: Community = {
+        id: created.objectId,
+        ...payload,
+      };
+
+      setCommunities((prev) => [newCommunity, ...prev]);
+      setNewCommunityName('');
+      setNewCommunityDescription('');
+      setCommunityModalVisible(false);
+    } catch (err: any) {
+      console.error('Error creando comunidad', err);
+      Alert.alert('Error', `Error al crear comunidad: ${err?.message ?? err}`);
+    }
   };
 
   const androidPaddingTop =
     Platform.OS === 'android' ? RNStatusBar.currentHeight : 0;
 
   // ----------------------------------------------------------------------
-  // RENDERIZADOS
+  // 7. RENDERIZADOS
   // ----------------------------------------------------------------------
 
   const renderCommunityItem = ({ item }: { item: Community }) => (
@@ -261,7 +314,7 @@ export function CommunitiesAdminMainScreen() {
     </Pressable>
   );
 
-  const renderPostItem = ({ item }: { item: (typeof INITIAL_POSTS)[0] }) => (
+  const renderPostItem = ({ item }: { item: CommunityPost }) => (
     <View
       className={`mb-4 rounded-2xl border p-4 shadow-sm ${
         isDark ? 'border-slate-700 bg-slate-900' : 'border-sky-200 bg-white'
@@ -300,8 +353,9 @@ export function CommunitiesAdminMainScreen() {
   );
 
   // ----------------------------------------------------------------------
-  // VISTA DETALLE DE COMUNIDAD
+  // 8. VISTA DETALLE DE COMUNIDAD
   // ----------------------------------------------------------------------
+
   if (selectedCommunity) {
     const communityPosts = posts.filter(
       (post) => post.communityId === selectedCommunity.id,
@@ -355,7 +409,7 @@ export function CommunitiesAdminMainScreen() {
         </View>
 
         {/* LISTA DE POSTS */}
-        <FlatList
+        <FlatList<CommunityPost>
           data={communityPosts}
           keyExtractor={(item) => item.id}
           renderItem={renderPostItem}
@@ -381,7 +435,7 @@ export function CommunitiesAdminMainScreen() {
           }
         />
 
-        {/* BOTÓN FLOTANTE (FAB) PARA PUBLICAR */}
+        {/* BOTÓN FLOTANTE PARA PUBLICAR */}
         <TouchableOpacity
           className={`absolute right-6 bottom-20 z-50 h-14 w-14 items-center justify-center rounded-full shadow-lg ${selectedCommunity.color}`}
           onPress={() => setModalVisible(true)}
@@ -430,9 +484,9 @@ export function CommunitiesAdminMainScreen() {
                 </Text>
                 <TouchableOpacity
                   onPress={handlePublish}
-                  disabled={postText.length === 0}
+                  disabled={postText.trim().length === 0}
                   className={`rounded-full px-4 py-1.5 ${
-                    postText.length > 0
+                    postText.trim().length > 0
                       ? selectedCommunity.color
                       : isDark
                         ? 'bg-slate-700'
@@ -462,8 +516,9 @@ export function CommunitiesAdminMainScreen() {
   }
 
   // ----------------------------------------------------------------------
-  // VISTA LISTA PRINCIPAL (COMUNIDADES + BOTÓN CREAR COMUNIDAD)
+  // 9. VISTA LISTA PRINCIPAL DE COMUNIDADES
   // ----------------------------------------------------------------------
+
   return (
     <SafeAreaView
       className={`flex-1 ${isDark ? 'bg-slate-950' : 'bg-sky-100'}`}
@@ -471,10 +526,12 @@ export function CommunitiesAdminMainScreen() {
     >
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
-      <FlatList
+      <FlatList<Community>
         data={communities}
         keyExtractor={(item) => item.id}
         renderItem={renderCommunityItem}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         contentContainerStyle={{
           paddingHorizontal: 20,
           paddingBottom: 32,
@@ -504,6 +561,22 @@ export function CommunitiesAdminMainScreen() {
               Administre las {communities.length} comunidades disponibles
             </Text>
 
+            {isLoading && (
+              <Text
+                className={`mt-2 text-xs ${
+                  isDark ? 'text-slate-400' : 'text-slate-500'
+                }`}
+              >
+                Cargando comunidades...
+              </Text>
+            )}
+
+            {errorMsg && (
+              <Text className="mt-2 text-xs font-semibold text-red-400">
+                Error al cargar datos: {errorMsg}
+              </Text>
+            )}
+
             <Pressable
               onPress={() => setCommunityModalVisible(true)}
               className="mt-3 self-start rounded-full bg-emerald-600 px-4 py-2 active:opacity-80"
@@ -513,6 +586,19 @@ export function CommunitiesAdminMainScreen() {
               </Text>
             </Pressable>
           </View>
+        }
+        ListEmptyComponent={
+          !isLoading ? (
+            <View className="mt-10 items-center">
+              <Text
+                className={`text-base ${
+                  isDark ? 'text-slate-300' : 'text-slate-600'
+                }`}
+              >
+                No hay comunidades todavía.
+              </Text>
+            </View>
+          ) : null
         }
       />
 

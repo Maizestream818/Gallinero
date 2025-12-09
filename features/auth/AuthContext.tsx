@@ -1,20 +1,43 @@
-// src/features/auth/AuthContext.tsx
+// features/auth/AuthContext.tsx
 import React, { createContext, ReactNode, useContext, useState } from 'react';
 
-type Role = 'admin' | 'student' | null;
+export type Role = 'admin' | 'student';
+
+export type AuthUser = {
+  objectId: string;
+  email: string;
+  fullName?: string;
+  career?: string;
+  studentId?: string;
+  gender?: string;
+  age?: number;
+};
 
 type AuthContextValue = {
-  role: Role;
-  setRole: (role: Role) => void;
+  user: AuthUser | null;
+  role: Role | null;
+  setAuth: (auth: { user: AuthUser; role: Role }) => void;
+  clearAuth: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [role, setRole] = useState<Role>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [role, setRole] = useState<Role | null>(null);
+
+  const setAuth = ({ user, role }: { user: AuthUser; role: Role }) => {
+    setUser(user);
+    setRole(role);
+  };
+
+  const clearAuth = () => {
+    setUser(null);
+    setRole(null);
+  };
 
   return (
-    <AuthContext.Provider value={{ role, setRole }}>
+    <AuthContext.Provider value={{ user, role, setAuth, clearAuth }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,29 +1,43 @@
+// features/user/screens/UserAdminMainScreen.tsx
+import { useAuth } from '@/features/auth/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
 export function UserAdminMainScreen() {
-  // Datos de ejemplo (después pueden venir de AuthContext / API)
-  const user = {
-    nombre: 'Luis Hernández',
-    correo: 'luis.hernandez@universidad.mx',
-    genero: 'Masculino',
-    edad: 35,
-    departamento: 'Departamento de Sistemas y Computación',
-    puesto: 'Coordinador de Laboratorio',
-  };
-
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const bgClass = isDark ? 'bg-slate-950' : 'bg-sky-100';
+
+  // 👇 Usuario PLANO que viene del AuthContext
+  const { user } = useAuth();
+
+  // Si por alguna razón no hay sesión activa
+  if (!user) {
+    return (
+      <View className={`flex-1 items-center justify-center ${bgClass}`}>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <Text className={isDark ? 'text-slate-100' : 'text-slate-900'}>
+          No hay sesión activa.
+        </Text>
+      </View>
+    );
+  }
+
+  // Campos tomados del usuario plano (el que guardamos en setAuth)
+  const nombre = user.fullName ?? user.email ?? 'Administrador';
+  const correo = user.email ?? 'sin-correo@ejemplo.com';
+  const genero = user.gender ?? 'No especificado';
+  const edadValor = user.age;
+
+  // Si más adelante agregas columnas específicas para admins en _User
+  // las podrías leer aquí; mientras tanto dejamos valores por defecto.
+  const departamento = (user as any).department ?? 'Departamento de Sistemas';
+  const puesto = (user as any).position ?? 'Administrador';
 
   return (
-    <View
-      className={`flex-1 ${
-        isDark ? 'bg-slate-950' : 'bg-sky-100'
-        //              ^^^^^^^^^  ⬅️ antes era bg-sky-900
-      }`}
-    >
+    <View className={`flex-1 ${bgClass}`}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
       <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
@@ -33,7 +47,7 @@ export function UserAdminMainScreen() {
             {/* Avatar redondo con inicial */}
             <View className="mb-4 h-24 w-24 items-center justify-center rounded-full bg-emerald-500">
               <Text className="text-4xl font-bold text-white">
-                {user.nombre.charAt(0)}
+                {nombre.charAt(0)}
               </Text>
             </View>
 
@@ -42,7 +56,7 @@ export function UserAdminMainScreen() {
                 isDark ? 'text-white' : 'text-slate-900'
               }`}
             >
-              {user.nombre}
+              {nombre}
             </Text>
 
             <Text
@@ -50,7 +64,7 @@ export function UserAdminMainScreen() {
                 isDark ? 'text-slate-300' : 'text-slate-600'
               }`}
             >
-              {user.correo}
+              {correo}
             </Text>
           </View>
 
@@ -63,7 +77,7 @@ export function UserAdminMainScreen() {
             Información de la cuenta
           </Text>
 
-          {/* Fila: Departamento */}
+          {/* Departamento */}
           <View
             className={`mb-3 flex-row items-center justify-between rounded-2xl border px-4 py-3 ${
               isDark
@@ -83,11 +97,11 @@ export function UserAdminMainScreen() {
                 isDark ? 'text-white' : 'text-slate-900'
               }`}
             >
-              {user.departamento}
+              {departamento}
             </Text>
           </View>
 
-          {/* Fila: Puesto */}
+          {/* Puesto */}
           <View
             className={`mb-3 flex-row items-center justify-between rounded-2xl border px-4 py-3 ${
               isDark
@@ -107,11 +121,11 @@ export function UserAdminMainScreen() {
                 isDark ? 'text-white' : 'text-slate-900'
               }`}
             >
-              {user.puesto}
+              {puesto}
             </Text>
           </View>
 
-          {/* Fila: Género */}
+          {/* Género */}
           <View
             className={`mb-3 flex-row items-center justify-between rounded-2xl border px-4 py-3 ${
               isDark
@@ -131,11 +145,11 @@ export function UserAdminMainScreen() {
                 isDark ? 'text-white' : 'text-slate-900'
               }`}
             >
-              {user.genero}
+              {genero}
             </Text>
           </View>
 
-          {/* Fila: Edad */}
+          {/* Edad */}
           <View
             className={`mb-3 flex-row items-center justify-between rounded-2xl border px-4 py-3 ${
               isDark
@@ -155,7 +169,7 @@ export function UserAdminMainScreen() {
                 isDark ? 'text-white' : 'text-slate-900'
               }`}
             >
-              {user.edad} años
+              {edadValor != null ? `${edadValor} años` : 'No especificada'}
             </Text>
           </View>
         </View>

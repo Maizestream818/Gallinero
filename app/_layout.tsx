@@ -16,13 +16,15 @@ import '../global.css';
 
 import Loader from '../components/loader';
 
+// ⬇️ NUEVO: inicializa Parse/Back4App al arrancar la app
+import '@/lib/parseClient';
+
 export const unstable_settings = {
   // anchor: '(tabs)',
   initialRouteName: 'login',
 };
 
 // 🎨 Tema oscuro personalizado (azul muy oscuro)
-// ⬅️ NUEVO BLOQUE
 const DarkBlueTheme: Theme = {
   ...DarkTheme,
   colors: {
@@ -35,7 +37,6 @@ const DarkBlueTheme: Theme = {
 };
 
 // 🎨 Tema claro personalizado (azul clarito)
-// ⬅️ NUEVO BLOQUE
 const LightBlueTheme: Theme = {
   ...DefaultTheme,
   colors: {
@@ -50,7 +51,7 @@ const LightBlueTheme: Theme = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
-  // ⬅️ NUEVO: elegimos el tema según sea oscuro o claro
+  // elegimos el tema según sea oscuro o claro
   const appTheme = colorScheme === 'dark' ? DarkBlueTheme : LightBlueTheme;
 
   const [isLoading, setIsLoading] = useState(true);
@@ -65,7 +66,6 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      {/* ⬅️ MODIFICADO: antes usaba DarkTheme / DefaultTheme directos */}
       <ThemeProvider value={appTheme}>
         {isLoading ? (
           <Loader />
@@ -79,7 +79,6 @@ export default function RootLayout() {
                 options={{ presentation: 'modal', title: 'Modal' }}
               />
             </Stack>
-            {/* ⬅️ MODIFICADO: ahora el StatusBar también respeta el modo */}
             <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
           </>
         )}

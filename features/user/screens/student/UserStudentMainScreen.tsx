@@ -1,3 +1,5 @@
+// features/user/screens/UserStudentMainScreen.tsx
+import { useAuth } from '@/features/auth/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
@@ -5,25 +7,22 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
 export function UserStudentMainScreen() {
-  // 🔹 Tema
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
-  // 🔹 Datos de ejemplo (luego pueden venir de AuthContext / API)
-  const user = {
-    nombre: 'Jaime López',
-    correo: 'jaime@example.com',
-    genero: 'Masculino',
-    edad: 23,
-    id: '123456', // ID de 6 dígitos
-    carrera: 'Ingeniería en Sistemas Computacionales',
-  };
+  const { user } = useAuth();
 
-  // 🔹 Datos que irán dentro del QR
+  const nombre = user?.fullName ?? 'Sin nombre';
+  const correo = user?.email ?? 'Sin correo';
+  const genero = user?.gender ?? 'Sin género';
+  const carrera = user?.career ?? 'Sin carrera';
+  const id = user?.studentId ?? 'Sin ID';
+  const edadValor = user?.age;
+
   const qrData = JSON.stringify({
-    nombre: user.nombre,
-    id: user.id,
-    correo: user.correo,
+    nombre,
+    id,
+    correo,
   });
 
   const [showQR, setShowQR] = useState(false);
@@ -31,18 +30,19 @@ export function UserStudentMainScreen() {
   const handleGenerateQR = () => setShowQR(true);
   const handleCloseQR = () => setShowQR(false);
 
+  const bgClass = isDark ? 'bg-slate-950' : 'bg-sky-100';
+
   return (
-    <View className={`flex-1 ${isDark ? 'bg-slate-950' : 'bg-sky-100'}`}>
+    <View className={`flex-1 ${bgClass}`}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
       <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
         <View className="px-6 pt-10 pb-6">
           {/* Encabezado tipo perfil */}
           <View className="mb-8 items-center">
-            {/* Avatar redondo con inicial */}
             <View className="mb-4 h-24 w-24 items-center justify-center rounded-full bg-emerald-500">
               <Text className="text-4xl font-bold text-white">
-                {user.nombre.charAt(0)}
+                {nombre.charAt(0)}
               </Text>
             </View>
 
@@ -51,20 +51,19 @@ export function UserStudentMainScreen() {
                 isDark ? 'text-white' : 'text-slate-900'
               }`}
             >
-              {user.nombre}
+              {nombre}
             </Text>
 
-            {/* Correo */}
             <Text
               className={`mt-1 text-sm ${
                 isDark ? 'text-slate-300' : 'text-slate-600'
               }`}
             >
-              {user.correo}
+              {correo}
             </Text>
           </View>
 
-          {/* Sección de información de la cuenta */}
+          {/* Información de la cuenta */}
           <Text
             className={`mb-3 text-xs font-semibold tracking-wide uppercase ${
               isDark ? 'text-slate-400' : 'text-slate-600'
@@ -73,7 +72,7 @@ export function UserStudentMainScreen() {
             Información de la cuenta
           </Text>
 
-          {/* Fila: Carrera */}
+          {/* Carrera */}
           <View
             className={`mb-3 flex-row items-center justify-between rounded-2xl px-4 py-3 ${
               isDark ? 'bg-slate-800/80' : 'bg-white'
@@ -91,11 +90,11 @@ export function UserStudentMainScreen() {
                 isDark ? 'text-white' : 'text-slate-900'
               }`}
             >
-              {user.carrera}
+              {carrera}
             </Text>
           </View>
 
-          {/* Fila: ID */}
+          {/* ID */}
           <View
             className={`mb-3 flex-row items-center justify-between rounded-2xl px-4 py-3 ${
               isDark ? 'bg-slate-800/80' : 'bg-white'
@@ -113,11 +112,11 @@ export function UserStudentMainScreen() {
                 isDark ? 'text-white' : 'text-slate-900'
               }`}
             >
-              {user.id}
+              {id}
             </Text>
           </View>
 
-          {/* Fila: Género */}
+          {/* Género */}
           <View
             className={`mb-3 flex-row items-center justify-between rounded-2xl px-4 py-3 ${
               isDark ? 'bg-slate-800/80' : 'bg-white'
@@ -135,11 +134,11 @@ export function UserStudentMainScreen() {
                 isDark ? 'text-white' : 'text-slate-900'
               }`}
             >
-              {user.genero}
+              {genero}
             </Text>
           </View>
 
-          {/* Fila: Edad */}
+          {/* Edad */}
           <View
             className={`mb-3 flex-row items-center justify-between rounded-2xl px-4 py-3 ${
               isDark ? 'bg-slate-800/80' : 'bg-white'
@@ -157,12 +156,11 @@ export function UserStudentMainScreen() {
                 isDark ? 'text-white' : 'text-slate-900'
               }`}
             >
-              {user.edad} años
+              {edadValor != null ? `${edadValor} años` : 'Sin edad'}
             </Text>
           </View>
         </View>
 
-        {/* Tarjeta con el QR (solo si showQR es true) */}
         {showQR && (
           <View className="px-6 pb-4">
             <View
@@ -182,7 +180,7 @@ export function UserStudentMainScreen() {
                 value={qrData}
                 size={180}
                 backgroundColor="transparent"
-                color={isDark ? 'white' : '#020617'} // blanco en oscuro, casi negro en claro
+                color={isDark ? 'white' : '#020617'}
               />
 
               <Pressable
@@ -204,7 +202,6 @@ export function UserStudentMainScreen() {
         )}
       </ScrollView>
 
-      {/* Botón inferior: Generar QR */}
       <View className="px-6 pb-8">
         <Pressable
           onPress={handleGenerateQR}

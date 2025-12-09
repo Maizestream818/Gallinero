@@ -1,3 +1,4 @@
+// features/communities/screens/student/CommunitiesStudentMainScreen.tsx
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
@@ -5,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import {
+  Alert,
   BackHandler,
   FlatList,
   Image,
@@ -18,8 +20,14 @@ import {
   View,
 } from 'react-native';
 
+import {
+  parseCreate,
+  parseFind,
+  type ParseBaseFields,
+} from '@/lib/parseClient';
+
 // ----------------------------------------------------------------------
-// 1. GENERADOR DE 30 COMUNIDADES
+// 1. CONFIGURACIÓN / TIPOS
 // ----------------------------------------------------------------------
 
 const COMMUNITY_TYPES = [
@@ -61,84 +69,113 @@ const COMMUNITY_TYPES = [
   },
 ];
 
-const DUMMY_COMMUNITIES = Array.from({ length: 30 }, (_, i) => {
-  const type = COMMUNITY_TYPES[i % COMMUNITY_TYPES.length];
-  return {
-    id: `c${i + 1}`,
-    name: `${type.name} ${Math.floor(i / 6) + 1}`,
-    description: `${type.desc} - Grupo oficial #${i + 1}`,
-    iconName: type.icon,
-    color: type.color,
-  };
-});
-
-type Community = (typeof DUMMY_COMMUNITIES)[0];
-
-// ----------------------------------------------------------------------
-// 2. GENERADOR DE POSTS (30 por comunidad)
-// ----------------------------------------------------------------------
-
-const AUTHORS = [
-  'Sofía Martínez',
-  'Jorge Luis',
-  'Ana Torres',
-  'Carlos Ruiz',
-  'Lucía Fernández',
-  'Miguel Ángel',
-  'Valentina R.',
-  'David P.',
-];
-
-const CONTENTS = [
-  '¿Alguien tiene los apuntes de la última clase? No pude asistir 😢',
-  '¡Atención! Mañana hay mantenimiento en las instalaciones.',
-  'Vendo calculadora científica en buen estado. Interesados al DM.',
-  '¿Saben si la cafetería está abierta hoy?',
-  'Organizando grupo de estudio para los finales. ¿Quién se apunta?',
-  'Perdí mi credencial cerca del edificio B, si alguien la ve avísenme.',
-  'Recuerden que el viernes es la fecha límite para el proyecto.',
-  'Torneo de fútbol este sábado, inscriban a sus equipos ⚽',
-  '¿Alguien para compartir locker este semestre?',
-  'Busco libro de anatomía usado, precio razonable.',
-  'Se busca bajista para banda de rock universitario 🎸',
-  '¿Alguien sabe a qué hora abre la biblioteca mañana?',
-];
-
-const generateAllPosts = () => {
-  const allPosts: any[] = [];
-  let postIdCounter = 1;
-
-  DUMMY_COMMUNITIES.forEach((community) => {
-    const numPosts = 30;
-
-    for (let i = 0; i < numPosts; i++) {
-      allPosts.push({
-        id: `p${postIdCounter++}`,
-        communityId: community.id,
-        author: AUTHORS[Math.floor(Math.random() * AUTHORS.length)],
-        role: 'Estudiante',
-        time: `Hace ${Math.floor(Math.random() * 23) + 1} horas`,
-        content: CONTENTS[Math.floor(Math.random() * CONTENTS.length)],
-        avatar: `https://i.pravatar.cc/150?u=${postIdCounter}`,
-      });
-    }
-  });
-
-  return allPosts;
+type Community = {
+  id: string;
+  name: string;
+  description: string;
+  iconName: string;
+  color: string;
 };
 
-const INITIAL_POSTS = generateAllPosts();
+type CommunityPost = {
+  id: string;
+  communityId: string;
+  author: string;
+  role: string;
+  time: string;
+  content: string;
+  avatar: string;
+};
+
+type CommunityRecord = ParseBaseFields & Partial<Community>;
+type CommunityPostRecord = ParseBaseFields & Partial<CommunityPost>;
+
+// ----------------------------------------------------------------------
+// 2. PANTALLA PRINCIPAL (STUDENT)
+// ----------------------------------------------------------------------
 
 export function CommunitiesStudentMainScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
+  const [communities, setCommunities] = useState<Community[]>([]);
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
+
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(
     null,
   );
-  const [posts, setPosts] = useState(INITIAL_POSTS);
   const [modalVisible, setModalVisible] = useState(false);
   const [postText, setPostText] = useState('');
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const androidPaddingTop =
+    Platform.OS === 'android' ? RNStatusBar.currentHeight : 0;
+
+  // --------------------------------------------------------------------
+  // CARGAR DATOS DESDE BACK4APP
+  // --------------------------------------------------------------------
+
+  const loadDataFromDatabase = async () => {
+    setErrorMsg(null);
+    setIsLoading(true);
+    try {
+      const [communityResults, postResults] = await Promise.all([
+        parseFind<CommunityRecord>('Community'),
+        parseFind<CommunityPostRecord>('CommunityPost'),
+      ]);
+
+      const mappedCommunities: Community[] = communityResults.map(
+        (item, index) => {
+          const type = COMMUNITY_TYPES[index % COMMUNITY_TYPES.length];
+
+          return {
+            id: item.objectId,
+            name: item.name ?? `Comunidad ${index + 1}`,
+            description: item.description ?? type.desc,
+            iconName: item.iconName ?? type.icon,
+            color: item.color ?? type.color,
+          };
+        },
+      );
+
+      const mappedPosts: CommunityPost[] = postResults.map((item) => ({
+        id: item.objectId,
+        communityId: item.communityId ?? '',
+        author: item.author ?? 'Desconocido',
+        role: item.role ?? 'Miembro',
+        time: item.time ?? 'Hace un momento',
+        content: item.content ?? '',
+        avatar:
+          item.avatar ??
+          'https://i.pravatar.cc/150?u=gallinero-community-default',
+      }));
+
+      setCommunities(mappedCommunities);
+      setPosts(mappedPosts);
+    } catch (err: any) {
+      console.error('Error cargando comunidades/posts (student)', err);
+      setErrorMsg(String(err?.message ?? err));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDataFromDatabase();
+  }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadDataFromDatabase();
+    setRefreshing(false);
+  };
+
+  // --------------------------------------------------------------------
+  // BACK BUTTON ANDROID (cerrar detalle)
+  // --------------------------------------------------------------------
 
   useEffect(() => {
     const onBackPress = () => {
@@ -148,6 +185,7 @@ export function CommunitiesStudentMainScreen() {
       }
       return false;
     };
+
     const subscription = BackHandler.addEventListener(
       'hardwareBackPress',
       onBackPress,
@@ -155,30 +193,42 @@ export function CommunitiesStudentMainScreen() {
     return () => subscription.remove();
   }, [selectedCommunity]);
 
-  const handlePublish = () => {
+  // --------------------------------------------------------------------
+  // PUBLICAR POST (GUARDAR EN CommunityPost)
+  // --------------------------------------------------------------------
+
+  const handlePublish = async () => {
     if (postText.trim() === '' || !selectedCommunity) return;
 
-    const newPost = {
-      id: Date.now().toString(),
+    const payload = {
       communityId: selectedCommunity.id,
       author: 'Tú',
       role: 'Estudiante',
       time: 'Ahora',
-      content: postText,
-      avatar: 'https://i.pravatar.cc/150?u=me',
+      content: postText.trim(),
+      avatar: 'https://i.pravatar.cc/150?u=student',
     };
 
-    setPosts([newPost, ...posts]);
-    setPostText('');
-    setModalVisible(false);
+    try {
+      const created = await parseCreate('CommunityPost', payload);
+
+      const newPost: CommunityPost = {
+        id: created.objectId,
+        ...payload,
+      };
+
+      setPosts((prev) => [newPost, ...prev]);
+      setPostText('');
+      setModalVisible(false);
+    } catch (err: any) {
+      console.error('Error publicando post (student)', err);
+      Alert.alert('Error', `Error al publicar: ${err?.message ?? err}`);
+    }
   };
 
-  const androidPaddingTop =
-    Platform.OS === 'android' ? RNStatusBar.currentHeight : 0;
-
-  // ----------------------------------------------------------------------
-  // RENDERIZADO
-  // ----------------------------------------------------------------------
+  // --------------------------------------------------------------------
+  // RENDERIZADOS
+  // --------------------------------------------------------------------
 
   const renderCommunityItem = ({ item }: { item: Community }) => (
     <Pressable
@@ -215,7 +265,7 @@ export function CommunitiesStudentMainScreen() {
     </Pressable>
   );
 
-  const renderPostItem = ({ item }: { item: (typeof INITIAL_POSTS)[0] }) => (
+  const renderPostItem = ({ item }: { item: CommunityPost }) => (
     <View
       className={`mb-4 rounded-2xl border p-4 shadow-sm ${
         isDark ? 'border-slate-700 bg-slate-900' : 'border-sky-200 bg-white'
@@ -253,7 +303,10 @@ export function CommunitiesStudentMainScreen() {
     </View>
   );
 
+  // --------------------------------------------------------------------
   // VISTA DETALLE DE COMUNIDAD
+  // --------------------------------------------------------------------
+
   if (selectedCommunity) {
     const communityPosts = posts.filter(
       (post) => post.communityId === selectedCommunity.id,
@@ -307,7 +360,7 @@ export function CommunitiesStudentMainScreen() {
         </View>
 
         {/* LISTA DE POSTS */}
-        <FlatList
+        <FlatList<CommunityPost>
           data={communityPosts}
           keyExtractor={(item) => item.id}
           renderItem={renderPostItem}
@@ -333,7 +386,7 @@ export function CommunitiesStudentMainScreen() {
           }
         />
 
-        {/* BOTÓN FLOTANTE (FAB) */}
+        {/* BOTÓN FLOTANTE PARA PUBLICAR */}
         <TouchableOpacity
           className={`absolute right-6 bottom-20 z-50 h-14 w-14 items-center justify-center rounded-full shadow-lg ${selectedCommunity.color}`}
           onPress={() => setModalVisible(true)}
@@ -382,9 +435,9 @@ export function CommunitiesStudentMainScreen() {
                 </Text>
                 <TouchableOpacity
                   onPress={handlePublish}
-                  disabled={postText.length === 0}
+                  disabled={postText.trim().length === 0}
                   className={`rounded-full px-4 py-1.5 ${
-                    postText.length > 0
+                    postText.trim().length > 0
                       ? selectedCommunity.color
                       : isDark
                         ? 'bg-slate-700'
@@ -413,13 +466,17 @@ export function CommunitiesStudentMainScreen() {
     );
   }
 
+  // --------------------------------------------------------------------
   // VISTA LISTA PRINCIPAL
+  // --------------------------------------------------------------------
+
   return (
     <SafeAreaView
       className={`flex-1 ${isDark ? 'bg-slate-950' : 'bg-sky-100'}`}
       style={{ paddingTop: androidPaddingTop }}
     >
       <StatusBar style={isDark ? 'light' : 'dark'} />
+
       <View
         className={`border-b px-5 pt-6 pb-4 ${
           isDark ? 'border-slate-800 bg-slate-950' : 'border-sky-200 bg-sky-100'
@@ -437,18 +494,49 @@ export function CommunitiesStudentMainScreen() {
             isDark ? 'text-slate-300' : 'text-slate-600'
           }`}
         >
-          Explora los {DUMMY_COMMUNITIES.length} grupos disponibles
+          Explora las comunidades disponibles
         </Text>
+
+        {isLoading && (
+          <Text
+            className={`mt-1 text-xs ${
+              isDark ? 'text-slate-400' : 'text-slate-500'
+            }`}
+          >
+            Cargando comunidades...
+          </Text>
+        )}
+
+        {errorMsg && (
+          <Text className="mt-1 text-xs font-semibold text-red-400">
+            Error al cargar datos: {errorMsg}
+          </Text>
+        )}
       </View>
 
-      <FlatList
-        data={DUMMY_COMMUNITIES}
+      <FlatList<Community>
+        data={communities}
         keyExtractor={(item) => item.id}
         renderItem={renderCommunityItem}
         contentContainerStyle={{ padding: 20, paddingBottom: 32 }}
         initialNumToRender={10}
         maxToRenderPerBatch={10}
         windowSize={5}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        ListEmptyComponent={
+          !isLoading ? (
+            <View className="mt-10 items-center">
+              <Text
+                className={`mb-2 text-center ${
+                  isDark ? 'text-slate-400' : 'text-slate-600'
+                }`}
+              >
+                No hay comunidades disponibles.
+              </Text>
+            </View>
+          ) : null
+        }
       />
     </SafeAreaView>
   );

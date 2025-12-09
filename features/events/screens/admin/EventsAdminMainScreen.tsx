@@ -1,8 +1,9 @@
 // features/events/screens/admin/EventsAdminMainScreen.tsx
 import { EventCard, type Event } from '@/features/events/components/EventCard';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Pressable,
   ScrollView,
@@ -12,7 +13,7 @@ import {
   View,
 } from 'react-native';
 
-// ⬅️ NUEVO: para saber si está en modo claro/oscuro
+// Modo claro/oscuro
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 // Date / time picker
@@ -23,6 +24,13 @@ import DateTimePicker, {
 // Cámara + escáner QR
 import { CameraView, useCameraPermissions } from 'expo-camera';
 
+// Cliente Back4App (REST)
+import {
+  parseCreate,
+  parseFind,
+  type ParseBaseFields,
+} from '@/lib/parseClient';
+
 type SectionTitle = 'Hoy' | 'Esta semana' | 'Próximos';
 
 type EventSection = {
@@ -30,272 +38,58 @@ type EventSection = {
   data: Event[];
 };
 
-// Datos de ejemplo
-const adminEventSectionsSeed: EventSection[] = [
-  {
-    title: 'Hoy',
-    data: [
-      {
-        id: '1',
-        title: 'Clase de React Native',
-        date: '28 nov 2025',
-        time: '10:00',
-        location: 'Aula 3',
-        description: 'Repaso de componentes, props y estado.',
-      },
-      {
-        id: '2',
-        title: 'Laboratorio de pruebas con Expo',
-        date: '28 nov 2025',
-        time: '12:00',
-        location: 'Laboratorio de cómputo 1',
-        description: 'Pruebas de hot reload, navegación y estilos.',
-      },
-      {
-        id: '3',
-        title: 'Sesión de dudas de proyecto',
-        date: '28 nov 2025',
-        time: '13:30',
-        location: 'Oficina del profesor',
-        description: 'Resolución de dudas generales del proyecto final.',
-      },
-      {
-        id: '4',
-        title: 'Revisión de UI con NativeWind',
-        date: '28 nov 2025',
-        time: '16:00',
-        location: 'Aula 5',
-        description: 'Ajuste de estilos y colores para la app.',
-      },
-      {
-        id: '5',
-        title: 'Práctica de Git y ramas',
-        date: '28 nov 2025',
-        time: '18:00',
-        location: 'Sala de estudio',
-        description: 'Uso de ramas, merge y resolución de conflictos.',
-      },
-    ],
-  },
-  {
-    title: 'Esta semana',
-    data: [
-      {
-        id: '6',
-        title: 'Taller de UI con NativeWind',
-        date: '30 nov 2025',
-        time: '16:00',
-        location: 'Laboratorio de cómputo',
-        description: 'Buenas prácticas de diseño de interfaces móviles.',
-      },
-      {
-        id: '7',
-        title: 'Revisión de proyecto final',
-        date: '02 dic 2025',
-        time: '12:00',
-        location: 'Oficina del profesor',
-        description: 'Entrega de avances del proyecto de la app.',
-      },
-      {
-        id: '8',
-        title: 'Sesión de testing en dispositivos físicos',
-        date: '03 dic 2025',
-        time: '09:00',
-        location: 'Laboratorio móvil',
-        description: 'Pruebas en diferentes modelos de teléfono.',
-      },
-      {
-        id: '9',
-        title: 'Charla: Buenas prácticas en React',
-        date: '03 dic 2025',
-        time: '11:00',
-        location: 'Auditorio pequeño',
-        description: 'Patrones de diseño y organización de archivos.',
-      },
-      {
-        id: '10',
-        title: 'Práctica de AsyncStorage',
-        date: '04 dic 2025',
-        time: '14:00',
-        location: 'Laboratorio de cómputo 2',
-        description: 'Persistencia de datos en dispositivos móviles.',
-      },
-      {
-        id: '11',
-        title: 'Integración con APIs REST',
-        date: '04 dic 2025',
-        time: '16:00',
-        location: 'Aula 2',
-        description: 'Consumo de endpoints desde React Native.',
-      },
-      {
-        id: '12',
-        title: 'Revisión de diseño de base de datos',
-        date: '05 dic 2025',
-        time: '10:00',
-        location: 'Biblioteca',
-        description: 'Normalización y relaciones entre tablas.',
-      },
-      {
-        id: '13',
-        title: 'Sesión de debugging con Flipper',
-        date: '05 dic 2025',
-        time: '12:00',
-        location: 'Laboratorio de cómputo 3',
-        description: 'Uso de herramientas para depurar la app.',
-      },
-      {
-        id: '14',
-        title: 'Prueba piloto de la app',
-        date: '06 dic 2025',
-        time: '09:30',
-        location: 'Aula de demostraciones',
-        description: 'Test con usuarios reales y retroalimentación.',
-      },
-      {
-        id: '15',
-        title: 'Reunión de equipo de proyecto',
-        date: '06 dic 2025',
-        time: '13:00',
-        location: 'Cafetería',
-        description: 'Ajuste de tareas, roles y tiempos de entrega.',
-      },
-    ],
-  },
-  {
-    title: 'Próximos',
-    data: [
-      {
-        id: '16',
-        title: 'Demo de aplicaciones móviles',
-        date: '10 dic 2025',
-        time: '09:30',
-        location: 'Auditorio principal',
-        description: 'Presentación de proyectos a todo el grupo.',
-      },
-      {
-        id: '17',
-        title: 'Concurso interno de apps',
-        date: '12 dic 2025',
-        time: '11:00',
-        location: 'Auditorio principal',
-        description: 'Presentación de las mejores aplicaciones del curso.',
-      },
-      {
-        id: '18',
-        title: 'Taller avanzado de animaciones',
-        date: '14 dic 2025',
-        time: '15:00',
-        location: 'Laboratorio de cómputo 4',
-        description: 'Uso de Reanimated y gestos avanzados.',
-      },
-      {
-        id: '19',
-        title: 'Charla con egresados',
-        date: '15 dic 2025',
-        time: '17:00',
-        location: 'Sala de conferencias',
-        description: 'Experiencias reales en la industria de desarrollo móvil.',
-      },
-      {
-        id: '20',
-        title: 'Entrega final de proyecto',
-        date: '18 dic 2025',
-        time: '10:00',
-        location: 'Oficina del profesor',
-        description: 'Evaluación completa del proyecto de la app.',
-      },
-      {
-        id: '21',
-        title: 'Sesión de feedback individual',
-        date: '19 dic 2025',
-        time: '12:00',
-        location: 'Oficina del profesor',
-        description: 'Comentarios personalizados del desempeño del curso.',
-      },
-      {
-        id: '22',
-        title: 'Expo de proyectos de la facultad',
-        date: '20 dic 2025',
-        time: '09:00',
-        location: 'Pasillos principales',
-        description: 'Exposición general de proyectos de diferentes materias.',
-      },
-      {
-        id: '23',
-        title: 'Taller de portafolio profesional',
-        date: '08 ene 2026',
-        time: '11:00',
-        location: 'Aula de cómputo',
-        description: 'Cómo presentar tus proyectos en un portafolio.',
-      },
-      {
-        id: '24',
-        title: 'Sesión de preparación de CV',
-        date: '10 ene 2026',
-        time: '13:00',
-        location: 'Sala de orientación',
-        description: 'Revisión de currículum para vacantes de desarrollo.',
-      },
-      {
-        id: '25',
-        title: 'Simulacro de entrevista técnica',
-        date: '12 ene 2026',
-        time: '16:00',
-        location: 'Laboratorio de cómputo',
-        description: 'Preguntas técnicas y resolución de ejercicios en vivo.',
-      },
-      {
-        id: '26',
-        title: 'Workshop: Deploy de apps',
-        date: '15 ene 2026',
-        time: '09:30',
-        location: 'Laboratorio de cómputo',
-        description: 'Publicación de apps en tiendas oficiales.',
-      },
-      {
-        id: '27',
-        title: 'Semana de innovación tecnológica',
-        date: '20 ene 2026',
-        time: '10:00',
-        location: 'Centro de innovación',
-        description: 'Charlas y exposiciones de nuevas tecnologías.',
-      },
-      {
-        id: '28',
-        title: 'Hackathon interno',
-        date: '25 ene 2026',
-        time: '08:00',
-        location: 'Auditorio principal',
-        description: 'Competencia de desarrollo con límite de tiempo.',
-      },
-      {
-        id: '29',
-        title: 'Reunión informativa de residencias',
-        date: '30 ene 2026',
-        time: '12:00',
-        location: 'Sala de juntas',
-        description: 'Explicación del proceso de residencias profesionales.',
-      },
-      {
-        id: '30',
-        title: 'Cierre de curso y retroalimentación',
-        date: '05 feb 2026',
-        time: '11:30',
-        location: 'Aula 3',
-        description: 'Última sesión del curso y comentarios generales.',
-      },
-    ],
-  },
-];
+// Evento tal como se guarda en Back4App
+type EventPayload = {
+  title: string;
+  date: string;
+  time: string;
+  location: string;
+  description: string;
+  section: SectionTitle;
+};
+
+// Evento que viene de Back4App (incluye objectId)
+type EventRecord = EventPayload & ParseBaseFields;
+
+// Agrupa la lista plana de eventos por sección para el SectionList
+function groupEventsBySection(records: EventRecord[]): EventSection[] {
+  const bySection: Record<SectionTitle, Event[]> = {
+    Hoy: [],
+    'Esta semana': [],
+    Próximos: [],
+  };
+
+  records.forEach((r) => {
+    const ev: Event = {
+      id: r.objectId, // usamos objectId de Parse como id de la card
+      title: r.title,
+      date: r.date,
+      time: r.time,
+      location: r.location,
+      description: r.description,
+    };
+
+    const section: SectionTitle = r.section ?? 'Próximos';
+    bySection[section].push(ev);
+  });
+
+  return [
+    { title: 'Hoy', data: bySection['Hoy'] },
+    { title: 'Esta semana', data: bySection['Esta semana'] },
+    { title: 'Próximos', data: bySection['Próximos'] },
+  ];
+}
 
 export function EventsAdminMainScreen() {
-  // ⬅️ NUEVO: detectamos modo claro/oscuro
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
-  // Lista de eventos (solo seed, no se modifica)
-  const [sections] = useState<EventSection[]>(adminEventSectionsSeed);
+  // Lista de eventos cargados desde Back4App
+  const [sections, setSections] = useState<EventSection[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+  const [eventsError, setEventsError] = useState<string | null>(null);
+  const [savingEvent, setSavingEvent] = useState(false);
+
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
   // Formulario "crear"
@@ -326,7 +120,7 @@ export function EventsAdminMainScreen() {
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
   const [hasScanned, setHasScanned] = useState(false);
 
-  // Invitados escaneados por evento: { [eventId]: string[] }
+  // Invitados por evento
   const [scannedGuestsByEvent, setScannedGuestsByEvent] = useState<
     Record<string, string[]>
   >({});
@@ -357,8 +151,39 @@ export function EventsAdminMainScreen() {
     setShowTimePicker(false);
   };
 
-  // Guardar (solo valida, NO guarda)
-  const handleCreateEvent = () => {
+  // Leer eventos desde Back4App
+  const loadEventsFromDatabase = async () => {
+    try {
+      setEventsError(null);
+      setLoadingEvents(true);
+
+      const records = (await parseFind<EventPayload>('Event')) as EventRecord[];
+
+      if (!records || records.length === 0) {
+        setSections([
+          { title: 'Hoy', data: [] },
+          { title: 'Esta semana', data: [] },
+          { title: 'Próximos', data: [] },
+        ]);
+      } else {
+        setSections(groupEventsBySection(records));
+      }
+    } catch (err) {
+      console.error('Error cargando eventos', err);
+      setEventsError(
+        err instanceof Error ? err.message : 'Error al cargar eventos.',
+      );
+    } finally {
+      setLoadingEvents(false);
+    }
+  };
+
+  useEffect(() => {
+    loadEventsFromDatabase();
+  }, []);
+
+  // Guardar (valida y guarda en Back4App)
+  const handleCreateEvent = async () => {
     if (!newEvent.date || !newEvent.time) {
       Alert.alert(
         'Datos incompletos',
@@ -367,7 +192,6 @@ export function EventsAdminMainScreen() {
       return;
     }
 
-    // Si es hoy, validar que la hora no sea pasada
     if (isTodaySelected) {
       const now = new Date();
       const [hourStr, minuteStr] = newEvent.time.split(':');
@@ -405,12 +229,40 @@ export function EventsAdminMainScreen() {
       }
     }
 
-    setShowCreateModal(false);
-    resetNewEvent();
-    setShowDatePicker(false);
-    setShowTimePicker(false);
+    try {
+      setSavingEvent(true);
 
-    Alert.alert('Evento guardado', 'Evento guardado exitosamente.');
+      const payload: EventPayload = {
+        title: newEvent.title,
+        date: newEvent.date,
+        time: newEvent.time,
+        location: newEvent.location,
+        description: newEvent.description,
+        section: newEvent.section,
+      };
+
+      // Guardar en Back4App
+      await parseCreate('Event', payload);
+
+      // Recargar eventos
+      await loadEventsFromDatabase();
+
+      Alert.alert('Evento guardado', 'Evento guardado exitosamente.');
+      setShowCreateModal(false);
+      resetNewEvent();
+      setShowDatePicker(false);
+      setShowTimePicker(false);
+    } catch (err) {
+      console.error('Error guardando evento', err);
+      Alert.alert(
+        'Error',
+        err instanceof Error
+          ? err.message
+          : 'Ocurrió un error al guardar el evento.',
+      );
+    } finally {
+      setSavingEvent(false);
+    }
   };
 
   // Fecha → calcula sección automática
@@ -483,7 +335,6 @@ export function EventsAdminMainScreen() {
   };
 
   // --- Escáner QR ---
-
   const handleOpenScanner = async () => {
     if (!cameraPermission || cameraPermission.status !== 'granted') {
       const permission = await requestCameraPermission();
@@ -509,14 +360,11 @@ export function EventsAdminMainScreen() {
 
   const handleBarcodeScanned = (result: { data?: string }) => {
     if (!result?.data) return;
-    if (hasScanned) return; // evita múltiples lecturas seguidas
+    if (hasScanned) return;
 
     const raw = result.data as string;
-
-    // 👇 Texto que vamos a mostrar y guardar en la lista
     let displayText = raw;
 
-    // Intentar interpretar el QR como JSON con { nombre, id, correo }
     try {
       const maybeJson = JSON.parse(raw);
 
@@ -533,13 +381,12 @@ export function EventsAdminMainScreen() {
         if (id) parts.push(`ID: ${id}`);
         if (correo) parts.push(`Correo: ${correo}`);
 
-        // Si logramos armar algo con los datos, lo usamos como texto formateado
         if (parts.length > 0) {
           displayText = parts.join(' • ');
         }
       }
     } catch {
-      // No era JSON válido → dejamos el contenido tal cual
+      // no era JSON
     }
 
     setHasScanned(true);
@@ -548,8 +395,6 @@ export function EventsAdminMainScreen() {
     if (selectedEvent?.id) {
       setScannedGuestsByEvent((prev) => {
         const prevList = prev[selectedEvent.id] ?? [];
-
-        // 👇 Si ya existe ese invitado en la lista de este evento, no lo agregamos
         if (prevList.includes(displayText)) {
           return prev;
         }
@@ -562,26 +407,22 @@ export function EventsAdminMainScreen() {
     }
   };
 
-  // Invitados del evento actualmente seleccionado
   const currentEventGuests =
     selectedEvent && scannedGuestsByEvent[selectedEvent.id]
       ? scannedGuestsByEvent[selectedEvent.id]
       : [];
 
   return (
-    // ⬅️ MOD: fondo dinámico según modo oscuro/claro
     <View className={`flex-1 ${isDark ? 'bg-slate-950' : 'bg-sky-100'}`}>
-      {/* ⬅️ MOD: StatusBar también se adapta */}
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
-      {/* LISTA PRINCIPAL DE EVENTOS */}
       <SectionList
         sections={sections}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{
           paddingHorizontal: 16,
           paddingBottom: 32,
-          paddingTop: 40, // espacio para que el título no toque la barra de notificaciones
+          paddingTop: 40,
         }}
         renderItem={({ item }) => (
           <EventCard
@@ -617,6 +458,25 @@ export function EventsAdminMainScreen() {
               Hoy, esta semana y próximos eventos.
             </Text>
 
+            {loadingEvents && (
+              <View className="mt-2 flex-row items-center gap-2">
+                <ActivityIndicator size="small" />
+                <Text
+                  className={`text-[11px] ${
+                    isDark ? 'text-slate-300' : 'text-slate-600'
+                  }`}
+                >
+                  Cargando eventos desde Back4App...
+                </Text>
+              </View>
+            )}
+
+            {eventsError && (
+              <Text className="mt-2 text-[11px] text-red-400">
+                Error al cargar eventos: {eventsError}
+              </Text>
+            )}
+
             <Pressable
               onPress={handleOpenCreate}
               className="mt-3 self-start rounded-full bg-emerald-600 px-4 py-2 active:opacity-80"
@@ -629,13 +489,30 @@ export function EventsAdminMainScreen() {
         }
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-16">
-            <Text
-              className={`text-base ${
-                isDark ? 'text-slate-300' : 'text-slate-700'
-              }`}
-            >
-              No hay eventos programados.
-            </Text>
+            {loadingEvents ? (
+              <>
+                <ActivityIndicator />
+                <Text
+                  className={`mt-2 text-base ${
+                    isDark ? 'text-slate-300' : 'text-slate-700'
+                  }`}
+                >
+                  Cargando eventos...
+                </Text>
+              </>
+            ) : eventsError ? (
+              <Text className="text-base text-red-400">
+                Error al cargar eventos.
+              </Text>
+            ) : (
+              <Text
+                className={`text-base ${
+                  isDark ? 'text-slate-300' : 'text-slate-700'
+                }`}
+              >
+                No hay eventos programados.
+              </Text>
+            )}
           </View>
         }
       />
@@ -728,7 +605,7 @@ export function EventsAdminMainScreen() {
                   </Text>
                 </View>
 
-                {/* Botón para escanear invitados */}
+                {/* Botón escanear invitados */}
                 <View className="mt-6">
                   <Pressable
                     onPress={handleOpenScanner}
@@ -739,7 +616,6 @@ export function EventsAdminMainScreen() {
                     </Text>
                   </Pressable>
 
-                  {/* Lista de invitados escaneados */}
                   {currentEventGuests.length > 0 && (
                     <View
                       className={`mt-4 rounded-2xl border p-3 ${
@@ -969,10 +845,13 @@ export function EventsAdminMainScreen() {
 
                   <Pressable
                     onPress={handleCreateEvent}
-                    className="rounded-full bg-emerald-600 px-4 py-2 active:opacity-80"
+                    disabled={savingEvent}
+                    className={`rounded-full px-4 py-2 active:opacity-80 ${
+                      savingEvent ? 'bg-emerald-400/60' : 'bg-emerald-600'
+                    }`}
                   >
                     <Text className="text-xs font-semibold text-white">
-                      Guardar
+                      {savingEvent ? 'Guardando...' : 'Guardar'}
                     </Text>
                   </Pressable>
                 </View>
@@ -1013,7 +892,6 @@ export function EventsAdminMainScreen() {
             onBarcodeScanned={handleBarcodeScanned}
           />
 
-          {/* Recuadro inferior con acciones */}
           <View className="absolute inset-x-4 bottom-10 rounded-3xl border border-emerald-500/40 bg-slate-900/90 px-4 py-3 shadow-lg shadow-black/70">
             {lastScannedCode ? (
               <>
