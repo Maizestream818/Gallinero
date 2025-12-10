@@ -24,6 +24,9 @@ import {
 // Usamos el AuthContext para guardar user + rol (objeto plano)
 import { useAuth } from '@/features/auth/AuthContext';
 
+// 🔹 Logger de actividad (Back4App)
+import { logActivity } from '@/utils/activityLogger';
+
 export default function LoginScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -151,14 +154,23 @@ export default function LoginScreen() {
       setAuth({ user: authUser, role });
 
       const nameFromDb = authUser.fullName ?? authUser.email;
+      const roleLabel = role === 'admin' ? 'Administrador' : 'Alumno';
 
+      // 5) Registrar INICIO DE SESIÓN en ActivityLog (Back4App)
+      await logActivity(`Inició sesión (${roleLabel})`, {
+        userId: authUser.objectId,
+        email: authUser.email,
+        fullName: authUser.fullName,
+      });
+
+      // 6) Mensaje de bienvenida
       if (role === 'admin') {
         Alert.alert('Bienvenido', `${nameFromDb}\n(Rol: Administrador)`);
       } else {
         Alert.alert('Bienvenido', `${nameFromDb}\n(Rol: Alumno)`);
       }
 
-      // Navega al layout principal (grupo de tabs)
+      // 7) Navega al layout principal (grupo de tabs)
       router.replace('/(tabs)');
     } catch (error: any) {
       console.error('Error al iniciar sesión', error);

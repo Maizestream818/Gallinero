@@ -1,8 +1,10 @@
 // features/user/screens/UserStudentMainScreen.tsx
 import { useAuth } from '@/features/auth/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { logActivity } from '@/utils/activityLogger';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
+import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useState } from 'react';
 import {
@@ -16,10 +18,7 @@ import {
   View,
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
-// Importamos el nuevo componente de barra de progreso
 import { ProgressBar } from './progresBar';
-// Importación del logger de actividad
-import { logActivity } from '@/utils/activityLogger'; // <-- NUEVO (Ajusta la ruta si es necesario)
 
 export function UserStudentMainScreen() {
   const colorScheme = useColorScheme();
@@ -33,7 +32,7 @@ export function UserStudentMainScreen() {
   const { user, updateProfile, signOut } = useAuth();
 
   // ------------------------------------------------
-  // LOGICA DEL QR DINÁMICO
+  // LÓGICA DEL QR DINÁMICO
   // ------------------------------------------------
 
   // Estado para el token dinámico (UUID o Timestamp)
@@ -50,8 +49,6 @@ export function UserStudentMainScreen() {
   const [showQR, setShowQR] = useState(false);
   const handleGenerateQR = () => setShowQR(true);
 
-  // Modificamos handleCloseQR para que también cambie el token si es necesario al cerrar,
-  // aunque la lógica principal de cambio ocurre en handleTimerEnd.
   const handleCloseQR = () => setShowQR(false);
 
   // ------------------------------------------------
@@ -101,10 +98,28 @@ export function UserStudentMainScreen() {
   // CERRAR SESIÓN (signOut)
   // -------------------------
   const handleSignOut = async () => {
-    // <-- Se usa una función intermedia para añadir navegación y log
+    try {
+      // Guardamos datos del usuario ANTES de cerrar sesión
+      const userId = (user as any)?.objectId;
+      const email = user?.email;
+      const fullName = user?.fullName;
+
+      // 1) Registrar actividad en Back4App
+      await logActivity('Cerró sesión', {
+        userId,
+        email,
+        fullName,
+      });
+    } catch (error) {
+      console.error('Error registrando actividad de cierre de sesión', error);
+      // No bloqueamos el cierre de sesión si falla el log
+    }
+
+    // 2) Limpiar sesión local (AuthContext / AsyncStorage)
     await signOut?.();
-    await logActivity('Cerró sesión'); // <-- REGISTRO DE ACTIVIDAD: Cerrar sesión
-    // Redirigir al Login y limpiar el stack de navegación
+
+    // 3) Enviar a la pantalla de login
+    router.replace('/login');
   };
 
   // ------------------------------------------------
@@ -122,7 +137,7 @@ export function UserStudentMainScreen() {
     nombre,
     id,
     correo,
-    token: qrToken, // <--- Dato dinámico
+    token: qrToken,
   });
 
   // ------------------------------------------------
@@ -150,7 +165,7 @@ export function UserStudentMainScreen() {
         <View className="px-6 pt-10 pb-6">
           {/* Encabezado tipo perfil */}
           <View className="mb-8 items-center">
-            {/* AVATAR */}
+            {/* AVATAR (abre modal al tocar) */}
             <Pressable onPress={() => setModalVisible(true)}>
               {avatar ? (
                 <Image
@@ -181,14 +196,6 @@ export function UserStudentMainScreen() {
             >
               {correo}
             </Text>
-
-            {/* EDITAR PERFIL */}
-            <Pressable
-              onPress={() => setModalVisible(true)}
-              className="mt-2 rounded-lg bg-indigo-600 px-4 py-2"
-            >
-              <Text className="text-white">Editar perfil</Text>
-            </Pressable>
           </View>
 
           {/* Información de la cuenta */}
@@ -233,7 +240,7 @@ export function UserStudentMainScreen() {
             </View>
           ))}
 
-          {/* NAVEGACIÓN (Historial, Preferencias, Contraseña) */}
+          {/* NAVEGACIÓN (solo Historial) */}
           <View className="mt-6">
             <Text
               className={`mb-3 text-xs font-semibold tracking-wide uppercase ${
@@ -242,24 +249,20 @@ export function UserStudentMainScreen() {
             >
               Ajustes y opciones
             </Text>
-            {[
-              ['Historial de actividad', 'ActivityHistory'],
-              ['Preferencias', 'Preferences'],
-              ['Cambiar contraseña', 'ChangePassword'],
-            ].map(([label, screen]) => (
-              <Pressable
-                key={label}
-                onPress={() => navigation.navigate(screen as never)}
-                className="mb-3 rounded-xl bg-indigo-600 px-4 py-3"
-              >
-                <Text className="text-center text-white">{label}</Text>
-              </Pressable>
-            ))}
+
+            <Pressable
+              onPress={() => navigation.navigate('ActivityHistory' as never)}
+              className="mb-3 rounded-xl bg-indigo-600 px-4 py-3"
+            >
+              <Text className="text-center text-white">
+                Historial de actividad
+              </Text>
+            </Pressable>
           </View>
 
           {/* CERRAR SESIÓN */}
           <Pressable
-            onPress={handleSignOut} // <-- Uso de la función con navegación y log
+            onPress={handleSignOut}
             className="mt-6 rounded-xl bg-red-600 px-4 py-3"
           >
             <Text className="text-center text-white">Cerrar sesión</Text>
@@ -285,7 +288,7 @@ export function UserStudentMainScreen() {
               {/* BARRA DE PROGRESO - USANDO KEY PARA FORZAR REINICIO */}
               <View className="mb-4 w-full px-4">
                 <ProgressBar
-                  key={qrToken} // <-- CAMBIO CLAVE: Reinicia la barra cada vez que el token cambia (cada 20s)
+                  key={qrToken}
                   onTimeEnd={handleTimerEnd}
                   isDark={isDark}
                 />
@@ -317,7 +320,7 @@ export function UserStudentMainScreen() {
         )}
       </ScrollView>
 
-      {/* BOTÓN DE GENERAR QR (Siempre visible en el footer, como se pidió) */}
+      {/* BOTÓN DE GENERAR QR (Siempre visible en el footer) */}
       <View className="px-6 pb-8">
         <Pressable
           onPress={handleGenerateQR}
@@ -362,7 +365,7 @@ export function UserStudentMainScreen() {
               value={draftName}
               onChangeText={setDraftName}
               placeholder="Nombre"
-              placeholderTextColor="#94a3b8" // slate-400
+              placeholderTextColor="#94a3b8"
               className="mt-4 rounded-lg border border-slate-300 p-3 text-slate-900"
             />
 

@@ -31,6 +31,12 @@ import {
   type ParseBaseFields,
 } from '@/lib/parseClient';
 
+// 🔹 Usuario actual (admin)
+import { useAuth } from '@/features/auth/AuthContext';
+
+// 🔹 Logger de actividad
+import { logActivity } from '@/utils/activityLogger';
+
 type SectionTitle = 'Hoy' | 'Esta semana' | 'Próximos';
 
 type EventSection = {
@@ -83,6 +89,9 @@ function groupEventsBySection(records: EventRecord[]): EventSection[] {
 export function EventsAdminMainScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+
+  // Admin logueado
+  const { user } = useAuth();
 
   // Lista de eventos cargados desde Back4App
   const [sections, setSections] = useState<EventSection[]>([]);
@@ -243,6 +252,21 @@ export function EventsAdminMainScreen() {
 
       // Guardar en Back4App
       await parseCreate('Event', payload);
+
+      // 🔹 Registrar en ActivityLog quién creó el evento
+      try {
+        await logActivity(`Creó el evento "${payload.title}"`, {
+          userId: (user as any)?.objectId,
+          email: user?.email,
+          fullName: user?.fullName,
+        });
+      } catch (logErr) {
+        console.error(
+          'Error registrando actividad de creación de evento',
+          logErr,
+        );
+        // No bloqueamos la creación del evento si falla el log
+      }
 
       // Recargar eventos
       await loadEventsFromDatabase();
@@ -441,6 +465,7 @@ export function EventsAdminMainScreen() {
             {section.title}
           </Text>
         )}
+        // 🔹 AQUÍ vive el título y el botón "Agregar evento"
         ListHeaderComponent={
           <View className="mb-2">
             <Text

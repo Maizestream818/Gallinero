@@ -25,15 +25,18 @@ import {
   parseFind,
   type ParseBaseFields,
 } from '@/lib/parseClient';
+
+// 🔹 NUEVO: para saber qué usuario publica
+import { useAuth } from '@/features/auth/AuthContext';
+
 // Importación del logger de actividad
-import { logActivity } from '@/utils/activityLogger'; // <-- NUEVO (Ajusta la ruta si es necesario)
+import { logActivity } from '@/utils/activityLogger';
 
 // ----------------------------------------------------------------------
 // 1. CONFIGURACIÓN / TIPOS
 // ----------------------------------------------------------------------
 
 const COMMUNITY_TYPES = [
-  // ... (tipos)
   {
     name: 'Salud',
     icon: 'house.fill',
@@ -100,6 +103,9 @@ type CommunityPostRecord = ParseBaseFields & Partial<CommunityPost>;
 export function CommunitiesStudentMainScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+
+  // 🔹 Usuario logueado (para historial)
+  const { user } = useAuth();
 
   const [communities, setCommunities] = useState<Community[]>([]);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
@@ -222,8 +228,12 @@ export function CommunitiesStudentMainScreen() {
 
       setPosts((prev) => [newPost, ...prev]);
 
-      // REGISTRO DE ACTIVIDAD: Realizaste un post
-      await logActivity(`Realizaste un post en "${selectedCommunity.name}"`); // <-- NUEVO
+      // 🔹 REGISTRO DE ACTIVIDAD: con datos del usuario
+      await logActivity(`Realizaste un post en "${selectedCommunity.name}"`, {
+        userId: (user as any)?.objectId,
+        email: user?.email,
+        fullName: user?.fullName,
+      });
 
       setPostText('');
       setModalVisible(false);
@@ -236,8 +246,6 @@ export function CommunitiesStudentMainScreen() {
   // --------------------------------------------------------------------
   // RENDERIZADOS
   // --------------------------------------------------------------------
-
-  // ... (renderCommunityItem, renderPostItem, y resto del componente) ...
 
   const renderCommunityItem = ({ item }: { item: Community }) => (
     <Pressable

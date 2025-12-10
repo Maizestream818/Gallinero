@@ -1,4 +1,4 @@
-// features/events/screens/admin/CommunitiesAdminMainScreen.tsx
+// features/communities/screens/admin/CommunitiesAdminMainScreen.tsx
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { StatusBar } from 'expo-status-bar';
@@ -19,20 +19,22 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+// 🔹 Usuario logueado
+import { useAuth } from '@/features/auth/AuthContext';
+
 // cliente Back4App
 import {
   parseCreate,
   parseFind,
   type ParseBaseFields,
 } from '@/lib/parseClient';
+
 // Importación del logger de actividad
-import { logActivity } from '@/utils/activityLogger'; // <-- NUEVO
+import { logActivity } from '@/utils/activityLogger';
 
 // ----------------------------------------------------------------------
 // 0. TIPOS
 // ----------------------------------------------------------------------
-
-// ... (Tipos Community, CommunityPost, CommunityRecord, CommunityPostRecord) ...
 
 type Community = {
   id: string;
@@ -52,12 +54,11 @@ type CommunityPost = {
   avatar: string;
 };
 
-// Cómo vienen de Back4App (todos opcionales + objectId, createdAt, updatedAt)
 type CommunityRecord = ParseBaseFields & Partial<Community>;
 type CommunityPostRecord = ParseBaseFields & Partial<CommunityPost>;
 
 // ----------------------------------------------------------------------
-// 1. PLANTILLAS DE COMUNIDADES (para icono / color)
+// 1. PLANTILLAS DE COMUNIDADES
 // ----------------------------------------------------------------------
 
 const COMMUNITY_TYPES = [
@@ -107,6 +108,9 @@ export function CommunitiesAdminMainScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
+  // 🔹 Admin logueado
+  const { user } = useAuth();
+
   // Comunidades y posts desde Back4App
   const [communities, setCommunities] = useState<Community[]>([]);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
@@ -124,6 +128,9 @@ export function CommunitiesAdminMainScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const androidPaddingTop =
+    Platform.OS === 'android' ? RNStatusBar.currentHeight : 0;
+
   // ----------------------------------------------------------------------
   // 3. CARGAR DATOS DESDE BACK4APP
   // ----------------------------------------------------------------------
@@ -138,7 +145,6 @@ export function CommunitiesAdminMainScreen() {
       ]);
 
       const mappedCommunities: Community[] = communityResults.map((item, i) => {
-        // fallback de icono/color por si no están guardados
         const type = COMMUNITY_TYPES[i % COMMUNITY_TYPES.length];
 
         return {
@@ -229,8 +235,12 @@ export function CommunitiesAdminMainScreen() {
 
       setPosts((prev) => [newPost, ...prev]);
 
-      // REGISTRO DE ACTIVIDAD: Realizaste un post
-      await logActivity(`Realizaste un post en "${selectedCommunity.name}"`); // <-- NUEVO
+      // 🔹 Registro de actividad con datos del admin
+      await logActivity(`Realizaste un post en "${selectedCommunity.name}"`, {
+        userId: (user as any)?.objectId,
+        email: user?.email,
+        fullName: user?.fullName,
+      });
 
       setPostText('');
       setModalVisible(false);
@@ -272,8 +282,12 @@ export function CommunitiesAdminMainScreen() {
 
       setCommunities((prev) => [newCommunity, ...prev]);
 
-      // REGISTRO DE ACTIVIDAD: Creación de comunidad
-      await logActivity(`Se creó la comunidad "${name}"`); // <-- NUEVO
+      // 🔹 Registro de actividad con datos del admin
+      await logActivity(`Se creó la comunidad "${name}"`, {
+        userId: (user as any)?.objectId,
+        email: user?.email,
+        fullName: user?.fullName,
+      });
 
       setNewCommunityName('');
       setNewCommunityDescription('');
@@ -284,14 +298,9 @@ export function CommunitiesAdminMainScreen() {
     }
   };
 
-  const androidPaddingTop =
-    Platform.OS === 'android' ? RNStatusBar.currentHeight : 0;
-
   // ----------------------------------------------------------------------
   // 7. RENDERIZADOS
   // ----------------------------------------------------------------------
-
-  // ... (renderCommunityItem, renderPostItem, y resto del componente) ...
 
   const renderCommunityItem = ({ item }: { item: Community }) => (
     <Pressable

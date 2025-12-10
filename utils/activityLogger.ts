@@ -1,52 +1,53 @@
 // utils/activityLogger.ts
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { parseCreate, parseFind } from '@/lib/parseClient';
 
-// Definición de la estructura de un registro
-export interface ActivityRecord {
-  timestamp: number;
+const CLASS_NAME = 'ActivityLog';
+
+export type ActivityLogItem = {
+  objectId: string;
+  userId?: string;
+  userEmail?: string;
+  userFullName?: string;
   message: string;
+  createdAt: string;
+};
+
+type LogActivityOptions = {
+  userId?: string;
+  email?: string;
+  fullName?: string;
+};
+
+export async function logActivity(
+  message: string,
+  options: LogActivityOptions = {},
+): Promise<void> {
+  try {
+    await parseCreate(CLASS_NAME, {
+      userId: options.userId ?? null,
+      userEmail: options.email ?? null,
+      userFullName: options.fullName ?? null,
+      message,
+    });
+  } catch (error) {
+    console.error('Error guardando actividad en Back4App', error);
+  }
 }
 
-// Clave donde se almacenarán los registros
-const ACTIVITY_STORAGE_KEY = '@UserActivityHistory';
-
-/**
- * Carga el historial de actividad desde el almacenamiento local.
- */
-export async function loadActivityHistory(): Promise<ActivityRecord[]> {
+// 🔹 SOLO historial de un usuario
+export async function getActivityLogByUser(
+  userId: string,
+): Promise<ActivityLogItem[]> {
   try {
-    const jsonValue = await AsyncStorage.getItem(ACTIVITY_STORAGE_KEY);
-    // Si no hay datos, retorna un array vacío. Si hay, parsea.
-    return jsonValue != null ? JSON.parse(jsonValue) : [];
-  } catch (e) {
-    console.error('Error al cargar el historial de actividad:', e);
+    const results = await parseFind<ActivityLogItem>(CLASS_NAME, {
+      where: { userId },
+      order: '-createdAt',
+      limit: 100,
+    });
+
+    return results ?? [];
+  } catch (error) {
+    console.error('Error obteniendo historial de actividad (by user)', error);
     return [];
   }
 }
-
-/**
- * Guarda un nuevo registro de actividad y lo añade a los registros existentes.
- * @param message El mensaje descriptivo de la actividad.
- */
-export async function logActivity(message: string): Promise<void> {
-  const newRecord: ActivityRecord = {
-    timestamp: Date.now(),
-    message: message,
-  };
-
-  try {
-    // 1. Cargar registros existentes
-    const existingHistory = await loadActivityHistory();
-
-    // 2. Añadir el nuevo registro (al inicio para que el más reciente salga primero)
-    const updatedHistory = [newRecord, ...existingHistory];
-
-    // 3. Guardar el historial actualizado
-    const jsonValue = JSON.stringify(updatedHistory);
-    await AsyncStorage.setItem(ACTIVITY_STORAGE_KEY, jsonValue);
-  } catch (e) {
-    console.error('Error al registrar la actividad:', e);
-  }
-}
-
-// Necesitas instalar el paquete: npx expo install @react-native-async-storage/async-storage

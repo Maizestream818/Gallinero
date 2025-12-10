@@ -3,6 +3,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
+import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
@@ -17,7 +18,7 @@ import {
 } from 'react-native';
 
 // Importación del logger de actividad
-import { logActivity } from '@/utils/activityLogger'; // <-- NUEVO
+import { logActivity } from '@/utils/activityLogger';
 
 export function UserAdminMainScreen() {
   const colorScheme = useColorScheme();
@@ -83,10 +84,30 @@ export function UserAdminMainScreen() {
   // CERRAR SESIÓN (signOut)
   // -------------------------
   const handleSignOut = async () => {
-    // <-- Se usa una función intermedia para añadir navegación y log
+    try {
+      // Guardamos datos del usuario ANTES de cerrar sesión
+      const userId = (user as any)?.objectId;
+      const email = user?.email;
+      const fullName = user?.fullName;
+
+      // 1) Registrar actividad en Back4App
+      await logActivity('Cerró sesión (Administrador)', {
+        userId,
+        email,
+        fullName,
+      });
+    } catch (error) {
+      console.error(
+        'Error registrando actividad de cierre de sesión (admin)',
+        error,
+      );
+    }
+
+    // 2) Limpiar sesión local (AuthContext / AsyncStorage)
     await signOut?.();
-    await logActivity('Cerró sesión'); // <-- REGISTRO DE ACTIVIDAD: Cerrar sesión
-    // Redirigir al Login y limpiar el stack de navegación
+
+    // 3) Redirigir al Login
+    router.replace('/login');
   };
 
   // ------------------------------------------------
@@ -107,15 +128,10 @@ export function UserAdminMainScreen() {
   // DATOS DEL PERFIL
   // -------------------------
   const nombre = user.fullName ?? user.email ?? 'Administrador';
-
   const correo = user.email ?? 'sin-correo@ejemplo.com';
-
   const genero = user.gender ?? 'No especificado';
-
   const edadValor = user.age;
-
   const departamento = (user as any).department ?? 'Departamento de Sistemas';
-
   const puesto = (user as any).position ?? 'Administrador';
 
   // ------------------------------------------------
@@ -127,9 +143,9 @@ export function UserAdminMainScreen() {
 
       <ScrollView contentContainerStyle={{ paddingBottom: 48 }}>
         <View className="px-6 pt-10 pb-6">
-          {/* HEADER PROFIL */}
+          {/* HEADER PERFIL */}
           <View className="mb-8 items-center">
-            {/*  AVATAR */}
+            {/* AVATAR (abre modal al tocar) */}
             <Pressable onPress={() => setModalVisible(true)}>
               {avatar ? (
                 <Image
@@ -160,14 +176,6 @@ export function UserAdminMainScreen() {
             >
               {correo}
             </Text>
-
-            {/*  EDITAR PERFIL */}
-            <Pressable
-              onPress={() => setModalVisible(true)}
-              className="mt-2 rounded-lg bg-emerald-600 px-4 py-2"
-            >
-              <Text className="text-white">Editar perfil</Text>
-            </Pressable>
           </View>
 
           {/* ------------------------------------------------ */}
@@ -181,7 +189,6 @@ export function UserAdminMainScreen() {
             Información de la cuenta
           </Text>
 
-          {/* Card helper */}
           {[
             ['Departamento', departamento],
             ['Puesto', puesto],
@@ -217,29 +224,32 @@ export function UserAdminMainScreen() {
           ))}
 
           {/* ------------------------------------------------ */}
-          {/*  NAVEGACIÓN */}
+          {/* NAVEGACIÓN (solo Historial) */}
           {/* ------------------------------------------------ */}
           <View className="mt-6">
-            {[
-              ['Historial de actividad', 'ActivityHistory'],
-              ['Preferencias', 'Preferences'],
-              ['Cambiar contraseña', 'ChangePassword'],
-            ].map(([label, screen]) => (
-              <Pressable
-                key={label}
-                onPress={() => navigation.navigate(screen as never)}
-                className="mb-3 rounded-xl bg-indigo-600 px-4 py-3"
-              >
-                <Text className="text-center text-white">{label}</Text>
-              </Pressable>
-            ))}
+            <Text
+              className={`mb-3 text-xs font-semibold tracking-wide uppercase ${
+                isDark ? 'text-slate-400' : 'text-slate-500'
+              }`}
+            >
+              Ajustes y opciones
+            </Text>
+
+            <Pressable
+              onPress={() => navigation.navigate('ActivityHistory' as never)}
+              className="mb-3 rounded-xl bg-indigo-600 px-4 py-3"
+            >
+              <Text className="text-center text-white">
+                Historial de actividad
+              </Text>
+            </Pressable>
           </View>
 
           {/* ------------------------------------------------ */}
-          {/*  LOGOUT */}
+          {/* LOGOUT */}
           {/* ------------------------------------------------ */}
           <Pressable
-            onPress={handleSignOut} // <-- Uso de la función con navegación y log
+            onPress={handleSignOut}
             className="mt-6 rounded-xl bg-red-600 px-4 py-3"
           >
             <Text className="text-center text-white">Cerrar sesión</Text>
@@ -248,7 +258,7 @@ export function UserAdminMainScreen() {
       </ScrollView>
 
       {/* ------------------------------------------------ */}
-      {/*  MODAL EDICIÓN PERFIL */}
+      {/* MODAL EDICIÓN PERFIL */}
       {/* ------------------------------------------------ */}
       <Modal
         visible={modalVisible}

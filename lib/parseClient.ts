@@ -18,6 +18,13 @@ export type ParseBaseFields = {
   updatedAt: string;
 };
 
+// Tipo de opciones para consultas con filtros/orden/límite
+export type ParseFindOptions = {
+  where?: Record<string, unknown>;
+  order?: string; // ejemplo: "-createdAt" o "createdAt"
+  limit?: number;
+};
+
 // ---------------------------------------------------------------------------
 // 1) FUNCIONES REST GENERALES (EVENTOS, COMUNIDADES, ETC.)
 // ---------------------------------------------------------------------------
@@ -40,10 +47,39 @@ export async function parseCreate(
   return (await res.json()) as ParseBaseFields;
 }
 
+/**
+ * Consulta genérica a una clase de Parse con soporte para:
+ *  - where: filtros (objeto JS que se convierte a JSON)
+ *  - order: campo de orden ("createdAt", "-createdAt", etc.)
+ *  - limit: número máximo de resultados
+ *
+ * Si no se pasan opciones, equivale a "SELECT *" de esa clase.
+ */
 export async function parseFind<T extends object>(
   className: string,
+  options: ParseFindOptions = {},
 ): Promise<(T & ParseBaseFields)[]> {
-  const res = await fetch(`${SERVER_URL}/classes/${className}`, {
+  const params = new URLSearchParams();
+
+  if (options.where) {
+    params.set('where', JSON.stringify(options.where));
+  }
+
+  if (options.order) {
+    params.set('order', options.order);
+  }
+
+  if (typeof options.limit === 'number') {
+    params.set('limit', String(options.limit));
+  }
+
+  const queryString = params.toString();
+  const url =
+    queryString.length > 0
+      ? `${SERVER_URL}/classes/${className}?${queryString}`
+      : `${SERVER_URL}/classes/${className}`;
+
+  const res = await fetch(url, {
     method: 'GET',
     headers: defaultHeaders,
   });
