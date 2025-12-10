@@ -3,7 +3,7 @@ import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider,
-  type Theme, // ⬅️ NUEVO: importamos el tipo Theme para tipar nuestros temas
+  type Theme,
 } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -16,32 +16,34 @@ import '../global.css';
 
 import Loader from '../components/loader';
 
-// ⬇️ NUEVO: inicializa Parse/Back4App al arrancar la app
+// inicializa Parse/Back4App
 import '@/lib/parseClient';
+
+// ELIMINADA LA IMPORTACIÓN DIRECTA para evitar el error de "component"
+// import { ActivityHistoryScreen } from '@/features/user/screens/ActivityHistoryScreen';
 
 export const unstable_settings = {
   // anchor: '(tabs)',
   initialRouteName: 'login',
 };
 
-// 🎨 Tema oscuro personalizado (azul muy oscuro)
+// 🎨 Temas... (sin cambios)
 const DarkBlueTheme: Theme = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
-    background: '#020617', // azul muy oscuro (similar a bg-slate-950)
+    background: '#020617',
     card: '#020617',
     border: '#1e293b',
     text: '#f9fafb',
   },
 };
 
-// 🎨 Tema claro personalizado (azul clarito)
 const LightBlueTheme: Theme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    background: '#e0f2fe', // azul claro (puede cambiarlo después)
+    background: '#e0f2fe',
     card: '#ffffff',
     border: '#cbd5e1',
     text: '#020617',
@@ -50,16 +52,13 @@ const LightBlueTheme: Theme = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-
-  // elegimos el tema según sea oscuro o claro
   const appTheme = colorScheme === 'dark' ? DarkBlueTheme : LightBlueTheme;
-
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setIsLoading(false); // cuando termina el tiempo, quitamos el loader
-    }, 5000); // 5000 ms = 5 s (ajustable)
+      setIsLoading(false);
+    }, 5000);
 
     return () => clearTimeout(timer);
   }, []);
@@ -74,6 +73,16 @@ export default function RootLayout() {
             <Stack>
               <Stack.Screen name="login" options={{ headerShown: false }} />
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+
+              {/* RUTA CORREGIDA: Ahora busca el archivo app/ActivityHistory.tsx */}
+              <Stack.Screen
+                name="ActivityHistory"
+                options={{
+                  headerShown: false,
+                  title: 'Historial de Actividad',
+                }}
+              />
+
               <Stack.Screen
                 name="modal"
                 options={{ presentation: 'modal', title: 'Modal' }}

@@ -1,43 +1,44 @@
 // features/user/screens/UserAdminMainScreen.tsx
 import { useAuth } from '@/features/auth/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useNavigation } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
-  ScrollView,
-  Text,
-  View,
-  Pressable,
+  Alert,
   Image,
   Modal,
+  Pressable,
+  ScrollView,
+  Text,
   TextInput,
-  Alert,
+  View,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import { useNavigation } from '@react-navigation/native';
 
+// Importación del logger de actividad
+import { logActivity } from '@/utils/activityLogger'; // <-- NUEVO
 
 export function UserAdminMainScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const bgClass = isDark ? 'bg-slate-950' : 'bg-sky-100';
 
-  // ✅ usamos navegación
+  // usamos navegación
   const navigation = useNavigation();
 
-  // 👇 Usuario PLANO que viene del AuthContext
+  // Usuario PLANO que viene del AuthContext
   const { user, updateProfile, signOut } = useAuth();
 
-  // ✅ control modal
+  // control modal
   const [modalVisible, setModalVisible] = useState(false);
 
-  // ✅ estado local editable
+  // estado local editable
   const [draftName, setDraftName] = useState(user?.fullName ?? '');
   const [draftEmail, setDraftEmail] = useState(user?.email ?? '');
   const [avatar, setAvatar] = useState<string | null>(
-    (user as any)?.avatar ?? null
+    (user as any)?.avatar ?? null,
   );
-  
 
   // -------------------------
   // GUARDAR CAMBIOS
@@ -48,12 +49,11 @@ export function UserAdminMainScreen() {
       return;
     }
 
-   await updateProfile?.({
-  fullName: draftName,
-  email: draftEmail,
-avatarUri: avatar ?? undefined,
-
-});
+    await updateProfile?.({
+      fullName: draftName,
+      email: draftEmail,
+      avatarUri: avatar ?? undefined,
+    });
 
     setModalVisible(false);
   };
@@ -79,6 +79,16 @@ avatarUri: avatar ?? undefined,
     }
   };
 
+  // -------------------------
+  // CERRAR SESIÓN (signOut)
+  // -------------------------
+  const handleSignOut = async () => {
+    // <-- Se usa una función intermedia para añadir navegación y log
+    await signOut?.();
+    await logActivity('Cerró sesión'); // <-- REGISTRO DE ACTIVIDAD: Cerrar sesión
+    // Redirigir al Login y limpiar el stack de navegación
+  };
+
   // ------------------------------------------------
   // SIN SESIÓN
   // ------------------------------------------------
@@ -96,22 +106,17 @@ avatarUri: avatar ?? undefined,
   // -------------------------
   // DATOS DEL PERFIL
   // -------------------------
-  const nombre =
-    user.fullName ?? user.email ?? 'Administrador';
+  const nombre = user.fullName ?? user.email ?? 'Administrador';
 
-  const correo =
-    user.email ?? 'sin-correo@ejemplo.com';
+  const correo = user.email ?? 'sin-correo@ejemplo.com';
 
-  const genero =
-    user.gender ?? 'No especificado';
+  const genero = user.gender ?? 'No especificado';
 
   const edadValor = user.age;
 
-  const departamento =
-    (user as any).department ?? 'Departamento de Sistemas';
+  const departamento = (user as any).department ?? 'Departamento de Sistemas';
 
-  const puesto =
-    (user as any).position ?? 'Administrador';
+  const puesto = (user as any).position ?? 'Administrador';
 
   // ------------------------------------------------
   // UI
@@ -122,11 +127,9 @@ avatarUri: avatar ?? undefined,
 
       <ScrollView contentContainerStyle={{ paddingBottom: 48 }}>
         <View className="px-6 pt-10 pb-6">
-
           {/* HEADER PROFIL */}
           <View className="mb-8 items-center">
-
-            {/* ✅ AVATAR */}
+            {/*  AVATAR */}
             <Pressable onPress={() => setModalVisible(true)}>
               {avatar ? (
                 <Image
@@ -158,7 +161,7 @@ avatarUri: avatar ?? undefined,
               {correo}
             </Text>
 
-            {/* ✅ EDITAR PERFIL */}
+            {/*  EDITAR PERFIL */}
             <Pressable
               onPress={() => setModalVisible(true)}
               className="mt-2 rounded-lg bg-emerald-600 px-4 py-2"
@@ -214,7 +217,7 @@ avatarUri: avatar ?? undefined,
           ))}
 
           {/* ------------------------------------------------ */}
-          {/* ✅ NAVEGACIÓN */}
+          {/*  NAVEGACIÓN */}
           {/* ------------------------------------------------ */}
           <View className="mt-6">
             {[
@@ -227,30 +230,25 @@ avatarUri: avatar ?? undefined,
                 onPress={() => navigation.navigate(screen as never)}
                 className="mb-3 rounded-xl bg-indigo-600 px-4 py-3"
               >
-                <Text className="text-center text-white">
-                  {label}
-                </Text>
+                <Text className="text-center text-white">{label}</Text>
               </Pressable>
             ))}
           </View>
 
           {/* ------------------------------------------------ */}
-          {/* ✅ LOGOUT */}
+          {/*  LOGOUT */}
           {/* ------------------------------------------------ */}
           <Pressable
-            onPress={signOut}
+            onPress={handleSignOut} // <-- Uso de la función con navegación y log
             className="mt-6 rounded-xl bg-red-600 px-4 py-3"
           >
-            <Text className="text-center text-white">
-              Cerrar sesión
-            </Text>
+            <Text className="text-center text-white">Cerrar sesión</Text>
           </Pressable>
-
         </View>
       </ScrollView>
 
       {/* ------------------------------------------------ */}
-      {/* ✅ MODAL EDICIÓN PERFIL */}
+      {/*  MODAL EDICIÓN PERFIL */}
       {/* ------------------------------------------------ */}
       <Modal
         visible={modalVisible}
@@ -260,7 +258,6 @@ avatarUri: avatar ?? undefined,
       >
         <View className="flex-1 items-center justify-center bg-black/40">
           <View className="w-[90%] rounded-2xl bg-white p-6">
-
             <Pressable onPress={pickAvatar}>
               {avatar ? (
                 <Image
@@ -307,16 +304,12 @@ avatarUri: avatar ?? undefined,
                 onPress={saveProfile}
                 className="rounded-lg bg-emerald-600 px-4 py-2"
               >
-                <Text className="text-white">
-                  Guardar cambios
-                </Text>
+                <Text className="text-white">Guardar cambios</Text>
               </Pressable>
             </View>
-
           </View>
         </View>
       </Modal>
-
     </View>
   );
 }

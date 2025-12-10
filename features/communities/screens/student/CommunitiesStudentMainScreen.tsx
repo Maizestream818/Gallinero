@@ -25,12 +25,15 @@ import {
   parseFind,
   type ParseBaseFields,
 } from '@/lib/parseClient';
+// Importación del logger de actividad
+import { logActivity } from '@/utils/activityLogger'; // <-- NUEVO (Ajusta la ruta si es necesario)
 
 // ----------------------------------------------------------------------
 // 1. CONFIGURACIÓN / TIPOS
 // ----------------------------------------------------------------------
 
 const COMMUNITY_TYPES = [
+  // ... (tipos)
   {
     name: 'Salud',
     icon: 'house.fill',
@@ -218,10 +221,14 @@ export function CommunitiesStudentMainScreen() {
       };
 
       setPosts((prev) => [newPost, ...prev]);
+
+      // REGISTRO DE ACTIVIDAD: Realizaste un post
+      await logActivity(`Realizaste un post en "${selectedCommunity.name}"`); // <-- NUEVO
+
       setPostText('');
       setModalVisible(false);
     } catch (err: any) {
-      console.error('Error publicando post (student)', err);
+      console.log('Error publicando post (student)', err);
       Alert.alert('Error', `Error al publicar: ${err?.message ?? err}`);
     }
   };
@@ -229,6 +236,8 @@ export function CommunitiesStudentMainScreen() {
   // --------------------------------------------------------------------
   // RENDERIZADOS
   // --------------------------------------------------------------------
+
+  // ... (renderCommunityItem, renderPostItem, y resto del componente) ...
 
   const renderCommunityItem = ({ item }: { item: Community }) => (
     <Pressable

@@ -1,37 +1,147 @@
 // features/user/screens/UserStudentMainScreen.tsx
 import { useAuth } from '@/features/auth/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useNavigation } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import {
+  Alert,
+  Image,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
+// Importamos el nuevo componente de barra de progreso
+import { ProgressBar } from './progresBar';
+// Importación del logger de actividad
+import { logActivity } from '@/utils/activityLogger'; // <-- NUEVO (Ajusta la ruta si es necesario)
 
 export function UserStudentMainScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const bgClass = isDark ? 'bg-slate-950' : 'bg-sky-100';
 
-  const { user } = useAuth();
+  // Usamos navegación para las pantallas adicionales
+  const navigation = useNavigation();
 
+  // Usuario y funciones del AuthContext
+  const { user, updateProfile, signOut } = useAuth();
+
+  // ------------------------------------------------
+  // LOGICA DEL QR DINÁMICO
+  // ------------------------------------------------
+
+  // Estado para el token dinámico (UUID o Timestamp)
+  const [qrToken, setQrToken] = useState(Date.now().toString());
+
+  // Función que se llama cuando el tiempo de la barra de progreso termina (cada 20s)
+  const handleTimerEnd = useCallback(() => {
+    // Generamos un nuevo token (basado en la hora actual)
+    // ESTO CAMBIA el key de ProgressBar y fuerza su reinicio
+    setQrToken(Date.now().toString());
+  }, []);
+
+  // Estado del QR (mostrar/ocultar)
+  const [showQR, setShowQR] = useState(false);
+  const handleGenerateQR = () => setShowQR(true);
+
+  // Modificamos handleCloseQR para que también cambie el token si es necesario al cerrar,
+  // aunque la lógica principal de cambio ocurre en handleTimerEnd.
+  const handleCloseQR = () => setShowQR(false);
+
+  // ------------------------------------------------
+  // LÓGICA DE EDICIÓN DE PERFIL (Modal)
+  // ------------------------------------------------
+  const [modalVisible, setModalVisible] = useState(false);
+  const [draftName, setDraftName] = useState(user?.fullName ?? '');
+  const [draftEmail, setDraftEmail] = useState(user?.email ?? '');
+  const [avatar, setAvatar] = useState<string | null>(
+    (user as any)?.avatar ?? null,
+  );
+
+  const saveProfile = async () => {
+    if (!draftName.trim()) {
+      Alert.alert('Validación', 'El nombre es obligatorio');
+      return;
+    }
+
+    await updateProfile?.({
+      fullName: draftName,
+      email: draftEmail,
+      avatarUri: avatar ?? undefined,
+    });
+
+    setModalVisible(false);
+  };
+
+  const pickAvatar = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permiso requerido para la galería');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+
+    if (!result.canceled) {
+      setAvatar(result.assets[0].uri);
+    }
+  };
+
+  // -------------------------
+  // CERRAR SESIÓN (signOut)
+  // -------------------------
+  const handleSignOut = async () => {
+    // <-- Se usa una función intermedia para añadir navegación y log
+    await signOut?.();
+    await logActivity('Cerró sesión'); // <-- REGISTRO DE ACTIVIDAD: Cerrar sesión
+    // Redirigir al Login y limpiar el stack de navegación
+  };
+
+  // ------------------------------------------------
+  // DATOS DEL PERFIL
+  // ------------------------------------------------
   const nombre = user?.fullName ?? 'Sin nombre';
   const correo = user?.email ?? 'Sin correo';
   const genero = user?.gender ?? 'Sin género';
-  const carrera = user?.career ?? 'Sin carrera';
-  const id = user?.studentId ?? 'Sin ID';
+  const carrera = (user as any)?.career ?? 'Sin carrera';
+  const id = (user as any)?.studentId ?? 'Sin ID';
   const edadValor = user?.age;
 
+  // Generamos el QR data incluyendo el token dinámico
   const qrData = JSON.stringify({
     nombre,
     id,
     correo,
+    token: qrToken, // <--- Dato dinámico
   });
 
-  const [showQR, setShowQR] = useState(false);
+  // ------------------------------------------------
+  // SIN SESIÓN
+  // ------------------------------------------------
+  if (!user) {
+    return (
+      <View className={`flex-1 items-center justify-center ${bgClass}`}>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <Text className={isDark ? 'text-slate-100' : 'text-slate-900'}>
+          No hay sesión activa.
+        </Text>
+      </View>
+    );
+  }
 
-  const handleGenerateQR = () => setShowQR(true);
-  const handleCloseQR = () => setShowQR(false);
-
-  const bgClass = isDark ? 'bg-slate-950' : 'bg-sky-100';
-
+  // ------------------------------------------------
+  // UI
+  // ------------------------------------------------
   return (
     <View className={`flex-1 ${bgClass}`}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
@@ -40,11 +150,21 @@ export function UserStudentMainScreen() {
         <View className="px-6 pt-10 pb-6">
           {/* Encabezado tipo perfil */}
           <View className="mb-8 items-center">
-            <View className="mb-4 h-24 w-24 items-center justify-center rounded-full bg-emerald-500">
-              <Text className="text-4xl font-bold text-white">
-                {nombre.charAt(0)}
-              </Text>
-            </View>
+            {/* AVATAR */}
+            <Pressable onPress={() => setModalVisible(true)}>
+              {avatar ? (
+                <Image
+                  source={{ uri: avatar }}
+                  className="mb-4 h-24 w-24 rounded-full"
+                />
+              ) : (
+                <View className="mb-4 h-24 w-24 items-center justify-center rounded-full bg-emerald-500">
+                  <Text className="text-4xl font-bold text-white">
+                    {nombre.charAt(0)}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
 
             <Text
               className={`text-xl font-semibold ${
@@ -61,6 +181,14 @@ export function UserStudentMainScreen() {
             >
               {correo}
             </Text>
+
+            {/* EDITAR PERFIL */}
+            <Pressable
+              onPress={() => setModalVisible(true)}
+              className="mt-2 rounded-lg bg-indigo-600 px-4 py-2"
+            >
+              <Text className="text-white">Editar perfil</Text>
+            </Pressable>
           </View>
 
           {/* Información de la cuenta */}
@@ -72,95 +200,73 @@ export function UserStudentMainScreen() {
             Información de la cuenta
           </Text>
 
-          {/* Carrera */}
-          <View
-            className={`mb-3 flex-row items-center justify-between rounded-2xl px-4 py-3 ${
-              isDark ? 'bg-slate-800/80' : 'bg-white'
-            }`}
-          >
-            <Text
-              className={`text-sm ${
-                isDark ? 'text-slate-400' : 'text-slate-500'
+          {/* Card helper para Carrera, ID, Género, Edad */}
+          {[
+            ['Carrera', carrera],
+            ['ID', id],
+            ['Género', genero],
+            [
+              'Edad',
+              edadValor != null ? `${edadValor} años` : 'No especificada',
+            ],
+          ].map(([label, value]) => (
+            <View
+              key={label}
+              className={`mb-3 flex-row items-center justify-between rounded-2xl px-4 py-3 ${
+                isDark ? 'bg-slate-800/80' : 'bg-white'
               }`}
             >
-              Carrera
-            </Text>
+              <Text
+                className={`text-sm ${
+                  isDark ? 'text-slate-400' : 'text-slate-500'
+                }`}
+              >
+                {label}
+              </Text>
+              <Text
+                className={`max-w-[60%] text-right text-base font-medium ${
+                  isDark ? 'text-white' : 'text-slate-900'
+                }`}
+              >
+                {value}
+              </Text>
+            </View>
+          ))}
+
+          {/* NAVEGACIÓN (Historial, Preferencias, Contraseña) */}
+          <View className="mt-6">
             <Text
-              className={`max-w-[60%] text-right text-base font-medium ${
-                isDark ? 'text-white' : 'text-slate-900'
+              className={`mb-3 text-xs font-semibold tracking-wide uppercase ${
+                isDark ? 'text-slate-400' : 'text-slate-600'
               }`}
             >
-              {carrera}
+              Ajustes y opciones
             </Text>
+            {[
+              ['Historial de actividad', 'ActivityHistory'],
+              ['Preferencias', 'Preferences'],
+              ['Cambiar contraseña', 'ChangePassword'],
+            ].map(([label, screen]) => (
+              <Pressable
+                key={label}
+                onPress={() => navigation.navigate(screen as never)}
+                className="mb-3 rounded-xl bg-indigo-600 px-4 py-3"
+              >
+                <Text className="text-center text-white">{label}</Text>
+              </Pressable>
+            ))}
           </View>
 
-          {/* ID */}
-          <View
-            className={`mb-3 flex-row items-center justify-between rounded-2xl px-4 py-3 ${
-              isDark ? 'bg-slate-800/80' : 'bg-white'
-            }`}
+          {/* CERRAR SESIÓN */}
+          <Pressable
+            onPress={handleSignOut} // <-- Uso de la función con navegación y log
+            className="mt-6 rounded-xl bg-red-600 px-4 py-3"
           >
-            <Text
-              className={`text-sm ${
-                isDark ? 'text-slate-400' : 'text-slate-500'
-              }`}
-            >
-              ID
-            </Text>
-            <Text
-              className={`text-base font-medium ${
-                isDark ? 'text-white' : 'text-slate-900'
-              }`}
-            >
-              {id}
-            </Text>
-          </View>
-
-          {/* Género */}
-          <View
-            className={`mb-3 flex-row items-center justify-between rounded-2xl px-4 py-3 ${
-              isDark ? 'bg-slate-800/80' : 'bg-white'
-            }`}
-          >
-            <Text
-              className={`text-sm ${
-                isDark ? 'text-slate-400' : 'text-slate-500'
-              }`}
-            >
-              Género
-            </Text>
-            <Text
-              className={`text-base font-medium ${
-                isDark ? 'text-white' : 'text-slate-900'
-              }`}
-            >
-              {genero}
-            </Text>
-          </View>
-
-          {/* Edad */}
-          <View
-            className={`mb-3 flex-row items-center justify-between rounded-2xl px-4 py-3 ${
-              isDark ? 'bg-slate-800/80' : 'bg-white'
-            }`}
-          >
-            <Text
-              className={`text-sm ${
-                isDark ? 'text-slate-400' : 'text-slate-500'
-              }`}
-            >
-              Edad
-            </Text>
-            <Text
-              className={`text-base font-medium ${
-                isDark ? 'text-white' : 'text-slate-900'
-              }`}
-            >
-              {edadValor != null ? `${edadValor} años` : 'Sin edad'}
-            </Text>
-          </View>
+            <Text className="text-center text-white">Cerrar sesión</Text>
+          </Pressable>
         </View>
 
+        {/* CONTENEDOR DEL QR (con barra de progreso) */}
         {showQR && (
           <View className="px-6 pb-4">
             <View
@@ -173,8 +279,17 @@ export function UserStudentMainScreen() {
                   isDark ? 'text-slate-100' : 'text-slate-900'
                 }`}
               >
-                Código QR de tu perfil
+                Código QR de tu perfil (Expira en 20s)
               </Text>
+
+              {/* BARRA DE PROGRESO - USANDO KEY PARA FORZAR REINICIO */}
+              <View className="mb-4 w-full px-4">
+                <ProgressBar
+                  key={qrToken} // <-- CAMBIO CLAVE: Reinicia la barra cada vez que el token cambia (cada 20s)
+                  onTimeEnd={handleTimerEnd}
+                  isDark={isDark}
+                />
+              </View>
 
               <QRCode
                 value={qrData}
@@ -202,6 +317,7 @@ export function UserStudentMainScreen() {
         )}
       </ScrollView>
 
+      {/* BOTÓN DE GENERAR QR (Siempre visible en el footer, como se pidió) */}
       <View className="px-6 pb-8">
         <Pressable
           onPress={handleGenerateQR}
@@ -210,6 +326,73 @@ export function UserStudentMainScreen() {
           <Text className="text-base font-semibold text-white">Generar QR</Text>
         </Pressable>
       </View>
+
+      {/* MODAL EDICIÓN PERFIL */}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View className="flex-1 items-center justify-center bg-black/40">
+          <View className="w-[90%] rounded-2xl bg-white p-6">
+            <Text className="mb-4 text-center text-lg font-bold">
+              Editar Perfil
+            </Text>
+            <Pressable onPress={pickAvatar}>
+              {avatar ? (
+                <Image
+                  source={{ uri: avatar }}
+                  className="mb-4 h-24 w-24 self-center rounded-full"
+                />
+              ) : (
+                <View className="mb-4 h-24 w-24 items-center justify-center self-center rounded-full bg-emerald-500">
+                  <Text className="text-4xl font-bold text-white">
+                    {nombre.charAt(0)}
+                  </Text>
+                </View>
+              )}
+
+              <Text className="text-center text-sm text-indigo-600">
+                Cambiar foto
+              </Text>
+            </Pressable>
+
+            <TextInput
+              value={draftName}
+              onChangeText={setDraftName}
+              placeholder="Nombre"
+              placeholderTextColor="#94a3b8" // slate-400
+              className="mt-4 rounded-lg border border-slate-300 p-3 text-slate-900"
+            />
+
+            <TextInput
+              value={draftEmail}
+              onChangeText={setDraftEmail}
+              placeholder="Correo"
+              placeholderTextColor="#94a3b8"
+              className="mt-3 rounded-lg border border-slate-300 p-3 text-slate-900"
+              keyboardType="email-address"
+            />
+
+            <View className="mt-6 flex-row justify-between">
+              <Pressable
+                onPress={() => setModalVisible(false)}
+                className="px-4 py-2"
+              >
+                <Text className="text-slate-600">Cancelar</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={saveProfile}
+                className="rounded-lg bg-emerald-600 px-4 py-2"
+              >
+                <Text className="text-white">Guardar cambios</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

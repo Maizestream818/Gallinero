@@ -19,16 +19,20 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// ⬅️ NUEVO: cliente Back4App (mismo que en Eventos)
+// cliente Back4App
 import {
   parseCreate,
   parseFind,
   type ParseBaseFields,
 } from '@/lib/parseClient';
+// Importación del logger de actividad
+import { logActivity } from '@/utils/activityLogger'; // <-- NUEVO
 
 // ----------------------------------------------------------------------
 // 0. TIPOS
 // ----------------------------------------------------------------------
+
+// ... (Tipos Community, CommunityPost, CommunityRecord, CommunityPostRecord) ...
 
 type Community = {
   id: string;
@@ -224,6 +228,10 @@ export function CommunitiesAdminMainScreen() {
       };
 
       setPosts((prev) => [newPost, ...prev]);
+
+      // REGISTRO DE ACTIVIDAD: Realizaste un post
+      await logActivity(`Realizaste un post en "${selectedCommunity.name}"`); // <-- NUEVO
+
       setPostText('');
       setModalVisible(false);
     } catch (err: any) {
@@ -263,6 +271,10 @@ export function CommunitiesAdminMainScreen() {
       };
 
       setCommunities((prev) => [newCommunity, ...prev]);
+
+      // REGISTRO DE ACTIVIDAD: Creación de comunidad
+      await logActivity(`Se creó la comunidad "${name}"`); // <-- NUEVO
+
       setNewCommunityName('');
       setNewCommunityDescription('');
       setCommunityModalVisible(false);
@@ -278,6 +290,8 @@ export function CommunitiesAdminMainScreen() {
   // ----------------------------------------------------------------------
   // 7. RENDERIZADOS
   // ----------------------------------------------------------------------
+
+  // ... (renderCommunityItem, renderPostItem, y resto del componente) ...
 
   const renderCommunityItem = ({ item }: { item: Community }) => (
     <Pressable
