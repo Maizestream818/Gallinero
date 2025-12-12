@@ -1,35 +1,42 @@
+import { useAuth } from '@/features/auth/AuthContext';
+import { useProfile } from '@/features/profile/useProfile';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
 export function UserStudentMainScreen() {
-  // 🔹 Tema
+  const { profile, loading } = useProfile();
+  const { logout } = useAuth();
+  const router = useRouter();
+
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
-  // 🔹 Datos de ejemplo (luego pueden venir de AuthContext / API)
-  const user = {
-    nombre: 'Jaime López',
-    correo: 'jaime@example.com',
-    genero: 'Masculino',
-    edad: 23,
-    id: '123456', // ID de 6 dígitos
-    carrera: 'Ingeniería en Sistemas Computacionales',
-  };
-
-  // 🔹 Datos que irán dentro del QR
-  const qrData = JSON.stringify({
-    nombre: user.nombre,
-    id: user.id,
-    correo: user.correo,
-  });
-
   const [showQR, setShowQR] = useState(false);
 
-  const handleGenerateQR = () => setShowQR(true);
-  const handleCloseQR = () => setShowQR(false);
+  if (loading || !profile) {
+    return (
+      <View className="flex-1 items-center justify-center bg-slate-900">
+        <ActivityIndicator size="large" color="white" />
+      </View>
+    );
+  }
+
+  const qrData = JSON.stringify({
+    nombre: profile.nombre,
+    id: profile.idEscolar,
+    correo: profile.email,
+  });
 
   return (
     <View className={`flex-1 ${isDark ? 'bg-slate-950' : 'bg-sky-100'}`}>
@@ -37,132 +44,109 @@ export function UserStudentMainScreen() {
 
       <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
         <View className="px-6 pt-10 pb-6">
-          {/* Encabezado tipo perfil */}
+          {/* Avatar real */}
           <View className="mb-8 items-center">
-            {/* Avatar redondo con inicial */}
-            <View className="mb-4 h-24 w-24 items-center justify-center rounded-full bg-emerald-500">
-              <Text className="text-4xl font-bold text-white">
-                {user.nombre.charAt(0)}
-              </Text>
-            </View>
+            <Image
+              source={{ uri: profile.avatarUrl }}
+              className="mb-4 h-24 w-24 rounded-full"
+            />
 
             <Text
-              className={`text-xl font-semibold ${
-                isDark ? 'text-white' : 'text-slate-900'
-              }`}
+              className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}
             >
-              {user.nombre}
+              {profile.nombre}
             </Text>
 
-            {/* Correo */}
             <Text
-              className={`mt-1 text-sm ${
-                isDark ? 'text-slate-300' : 'text-slate-600'
-              }`}
+              className={`mt-1 text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}
             >
-              {user.correo}
+              {profile.email}
             </Text>
           </View>
 
-          {/* Sección de información de la cuenta */}
+          {/* Información */}
           <Text
             className={`mb-3 text-xs font-semibold tracking-wide uppercase ${
-              isDark ? 'text-slate-400' : 'text-slate-600'
+              isDark ? 'text-slate-400' : 'text-slate-500'
             }`}
           >
             Información de la cuenta
           </Text>
 
-          {/* Fila: Carrera */}
+          {/* Carrera */}
           <View
             className={`mb-3 flex-row items-center justify-between rounded-2xl px-4 py-3 ${
               isDark ? 'bg-slate-800/80' : 'bg-white'
             }`}
           >
             <Text
-              className={`text-sm ${
-                isDark ? 'text-slate-400' : 'text-slate-500'
-              }`}
+              className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}
             >
               Carrera
             </Text>
             <Text
-              className={`max-w-[60%] text-right text-base font-medium ${
-                isDark ? 'text-white' : 'text-slate-900'
-              }`}
+              className={`text-base font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}
             >
-              {user.carrera}
+              Ingeniería en Sistemas Computacionales
             </Text>
           </View>
 
-          {/* Fila: ID */}
+          {/* ID */}
           <View
             className={`mb-3 flex-row items-center justify-between rounded-2xl px-4 py-3 ${
               isDark ? 'bg-slate-800/80' : 'bg-white'
             }`}
           >
             <Text
-              className={`text-sm ${
-                isDark ? 'text-slate-400' : 'text-slate-500'
-              }`}
+              className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}
             >
-              ID
+              ID Escolar
             </Text>
             <Text
-              className={`text-base font-medium ${
-                isDark ? 'text-white' : 'text-slate-900'
-              }`}
+              className={`text-base font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}
             >
-              {user.id}
+              {profile.idEscolar}
             </Text>
           </View>
 
-          {/* Fila: Género */}
+          {/* Sexo */}
           <View
             className={`mb-3 flex-row items-center justify-between rounded-2xl px-4 py-3 ${
               isDark ? 'bg-slate-800/80' : 'bg-white'
             }`}
           >
             <Text
-              className={`text-sm ${
-                isDark ? 'text-slate-400' : 'text-slate-500'
-              }`}
+              className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}
             >
-              Género
+              Sexo
             </Text>
             <Text
-              className={`text-base font-medium ${
-                isDark ? 'text-white' : 'text-slate-900'
-              }`}
+              className={`text-base font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}
             >
-              {user.genero}
+              {profile.sexo}
             </Text>
           </View>
 
-          {/* Fila: Edad */}
+          {/* Edad */}
           <View
             className={`mb-3 flex-row items-center justify-between rounded-2xl px-4 py-3 ${
               isDark ? 'bg-slate-800/80' : 'bg-white'
             }`}
           >
             <Text
-              className={`text-sm ${
-                isDark ? 'text-slate-400' : 'text-slate-500'
-              }`}
+              className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}
             >
               Edad
             </Text>
             <Text
-              className={`text-base font-medium ${
-                isDark ? 'text-white' : 'text-slate-900'
-              }`}
+              className={`text-base font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}
             >
-              {user.edad} años
+              {profile.edad} años
             </Text>
           </View>
         </View>
 
-        {/* Tarjeta con el QR (solo si showQR es true) */}
+        {/* QR */}
         {showQR && (
           <View className="px-6 pb-4">
             <View
@@ -182,19 +166,15 @@ export function UserStudentMainScreen() {
                 value={qrData}
                 size={180}
                 backgroundColor="transparent"
-                color={isDark ? 'white' : '#020617'} // blanco en oscuro, casi negro en claro
+                color={isDark ? 'white' : '#020617'}
               />
 
               <Pressable
-                onPress={handleCloseQR}
-                className={`mt-4 rounded-xl px-4 py-2 ${
-                  isDark ? 'bg-slate-700' : 'bg-slate-200'
-                }`}
+                onPress={() => setShowQR(false)}
+                className={`mt-4 rounded-xl px-4 py-2 ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`}
               >
                 <Text
-                  className={`text-sm font-medium ${
-                    isDark ? 'text-slate-100' : 'text-slate-800'
-                  }`}
+                  className={`text-sm font-medium ${isDark ? 'text-slate-100' : 'text-slate-800'}`}
                 >
                   Cerrar QR
                 </Text>
@@ -204,13 +184,25 @@ export function UserStudentMainScreen() {
         )}
       </ScrollView>
 
-      {/* Botón inferior: Generar QR */}
-      <View className="px-6 pb-8">
+      {/* Botón QR */}
+      <View className="px-6 pb-4">
         <Pressable
-          onPress={handleGenerateQR}
+          onPress={() => setShowQR(true)}
           className="items-center justify-center rounded-2xl bg-emerald-500 py-3"
         >
           <Text className="text-base font-semibold text-white">Generar QR</Text>
+        </Pressable>
+      </View>
+
+      {/* Cerrar sesión */}
+      <View className="px-6 pb-8">
+        <Pressable
+          onPress={() => logout().then(() => router.replace('/login'))}
+          className="items-center justify-center rounded-2xl bg-red-500 py-3"
+        >
+          <Text className="text-base font-semibold text-white">
+            Cerrar sesión
+          </Text>
         </Pressable>
       </View>
     </View>

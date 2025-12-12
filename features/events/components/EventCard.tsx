@@ -5,7 +5,8 @@ import { Pressable, Text, View } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export type Event = {
-  id: string;
+  id: string; // Este es el ID único para el evento en el backend
+  googleEventId: string; // Este es el ID del evento en Google Calendar
   title: string;
   date: string; // Ej: "28 nov 2025" o "2025-11-28"
   time?: string; // Ej: "18:30"

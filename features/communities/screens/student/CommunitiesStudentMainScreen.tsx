@@ -1,10 +1,12 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useAuth } from '@/features/auth/AuthContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import axios from 'axios';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import {
+  ActivityIndicator,
+  Alert,
   BackHandler,
   FlatList,
   Image,
@@ -17,129 +19,69 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-// ----------------------------------------------------------------------
-// 1. GENERADOR DE 30 COMUNIDADES
-// ----------------------------------------------------------------------
+const API_BASE = 'http://10.147.18.126:3000';
 
-const COMMUNITY_TYPES = [
-  {
-    name: 'Salud',
-    icon: 'house.fill',
-    color: 'bg-emerald-500',
-    desc: 'Bienestar y vida sana',
-  },
-  {
-    name: 'Sistemas',
-    icon: 'chevron.left.forwardslash.chevron.right',
-    color: 'bg-blue-500',
-    desc: 'Tecnología y código',
-  },
-  {
-    name: 'Música',
-    icon: 'paperplane.fill',
-    color: 'bg-purple-500',
-    desc: 'Arte y conciertos',
-  },
-  {
-    name: 'Comunicación',
-    icon: 'chevron.right',
-    color: 'bg-orange-500',
-    desc: 'Debates y noticias',
-  },
-  {
-    name: 'Deportes',
-    icon: 'house.fill',
-    color: 'bg-red-500',
-    desc: 'Torneos y entrenamiento',
-  },
-  {
-    name: 'Arquitectura',
-    icon: 'paperplane.fill',
-    color: 'bg-slate-600',
-    desc: 'Diseño y estructuras',
-  },
-];
-
-const DUMMY_COMMUNITIES = Array.from({ length: 30 }, (_, i) => {
-  const type = COMMUNITY_TYPES[i % COMMUNITY_TYPES.length];
-  return {
-    id: `c${i + 1}`,
-    name: `${type.name} ${Math.floor(i / 6) + 1}`,
-    description: `${type.desc} - Grupo oficial #${i + 1}`,
-    iconName: type.icon,
-    color: type.color,
-  };
-});
-
-type Community = (typeof DUMMY_COMMUNITIES)[0];
-
-// ----------------------------------------------------------------------
-// 2. GENERADOR DE POSTS (30 por comunidad)
-// ----------------------------------------------------------------------
-
-const AUTHORS = [
-  'Sofía Martínez',
-  'Jorge Luis',
-  'Ana Torres',
-  'Carlos Ruiz',
-  'Lucía Fernández',
-  'Miguel Ángel',
-  'Valentina R.',
-  'David P.',
-];
-
-const CONTENTS = [
-  '¿Alguien tiene los apuntes de la última clase? No pude asistir 😢',
-  '¡Atención! Mañana hay mantenimiento en las instalaciones.',
-  'Vendo calculadora científica en buen estado. Interesados al DM.',
-  '¿Saben si la cafetería está abierta hoy?',
-  'Organizando grupo de estudio para los finales. ¿Quién se apunta?',
-  'Perdí mi credencial cerca del edificio B, si alguien la ve avísenme.',
-  'Recuerden que el viernes es la fecha límite para el proyecto.',
-  'Torneo de fútbol este sábado, inscriban a sus equipos ⚽',
-  '¿Alguien para compartir locker este semestre?',
-  'Busco libro de anatomía usado, precio razonable.',
-  'Se busca bajista para banda de rock universitario 🎸',
-  '¿Alguien sabe a qué hora abre la biblioteca mañana?',
-];
-
-const generateAllPosts = () => {
-  const allPosts: any[] = [];
-  let postIdCounter = 1;
-
-  DUMMY_COMMUNITIES.forEach((community) => {
-    const numPosts = 30;
-
-    for (let i = 0; i < numPosts; i++) {
-      allPosts.push({
-        id: `p${postIdCounter++}`,
-        communityId: community.id,
-        author: AUTHORS[Math.floor(Math.random() * AUTHORS.length)],
-        role: 'Estudiante',
-        time: `Hace ${Math.floor(Math.random() * 23) + 1} horas`,
-        content: CONTENTS[Math.floor(Math.random() * CONTENTS.length)],
-        avatar: `https://i.pravatar.cc/150?u=${postIdCounter}`,
-      });
-    }
-  });
-
-  return allPosts;
+type Community = {
+  id: string;
+  name: string;
+  description: string;
+  color: string;
+  iconName: string;
 };
 
-const INITIAL_POSTS = generateAllPosts();
+type Post = {
+  id: string;
+  communityId: string;
+  authorGithubId: number;
+  authorName: string;
+  role: string;
+  avatarUrl?: string | null;
+  content: string;
+  timestamp: number;
+};
 
 export function CommunitiesStudentMainScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const { token } = useAuth();
+
+  const [communities, setCommunities] = useState<Community[]>([]);
+  const [loadingCommunities, setLoadingCommunities] = useState(true);
 
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(
     null,
   );
-  const [posts, setPosts] = useState(INITIAL_POSTS);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(false);
+
   const [modalVisible, setModalVisible] = useState(false);
   const [postText, setPostText] = useState('');
 
+  const androidPaddingTop =
+    Platform.OS === 'android' ? RNStatusBar.currentHeight : 0;
+
+  // ----------------------------------------------------------------------
+  // Cargar comunidades reales
+  // ----------------------------------------------------------------------
+  useEffect(() => {
+    const loadCommunities = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/api/comunidades`);
+        setCommunities(res.data || []);
+      } catch (err) {
+        console.error('Error cargando comunidades:', err);
+        Alert.alert('Error', 'No se pudieron cargar las comunidades');
+      } finally {
+        setLoadingCommunities(false);
+      }
+    };
+
+    loadCommunities();
+  }, []);
+
+  // Manejar botón back en detalle
   useEffect(() => {
     const onBackPress = () => {
       if (selectedCommunity) {
@@ -155,34 +97,68 @@ export function CommunitiesStudentMainScreen() {
     return () => subscription.remove();
   }, [selectedCommunity]);
 
-  const handlePublish = () => {
-    if (postText.trim() === '' || !selectedCommunity) return;
+  // ----------------------------------------------------------------------
+  // Cargar posts de comunidad
+  // ----------------------------------------------------------------------
+  const loadPostsForCommunity = async (community: Community) => {
+    setSelectedCommunity(community);
+    setLoadingPosts(true);
 
-    const newPost = {
-      id: Date.now().toString(),
-      communityId: selectedCommunity.id,
-      author: 'Tú',
-      role: 'Estudiante',
-      time: 'Ahora',
-      content: postText,
-      avatar: 'https://i.pravatar.cc/150?u=me',
-    };
-
-    setPosts([newPost, ...posts]);
-    setPostText('');
-    setModalVisible(false);
+    try {
+      const res = await axios.get(
+        `${API_BASE}/api/comunidades/${community.id}/posts`,
+      );
+      setPosts(res.data || []);
+    } catch (err) {
+      console.error('Error cargando posts:', err);
+      Alert.alert('Error', 'No se pudieron cargar las publicaciones');
+    } finally {
+      setLoadingPosts(false);
+    }
   };
 
-  const androidPaddingTop =
-    Platform.OS === 'android' ? RNStatusBar.currentHeight : 0;
+  // ----------------------------------------------------------------------
+  // Publicar post (estudiante)
+  // ----------------------------------------------------------------------
+  const handlePublish = async () => {
+    if (!postText.trim() || !selectedCommunity) return;
+
+    if (!token) {
+      Alert.alert('Sesión requerida', 'Debes iniciar sesión para publicar');
+      return;
+    }
+
+    try {
+      const res = await axios.post(
+        `${API_BASE}/api/posts`,
+        {
+          communityId: selectedCommunity.id,
+          content: postText.trim(),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      const newPost: Post = res.data.post;
+      setPosts((prev) => [newPost, ...prev]);
+
+      setPostText('');
+      setModalVisible(false);
+    } catch (err) {
+      console.error('Error publicando post:', err);
+      Alert.alert('Error', 'No se pudo publicar el mensaje');
+    }
+  };
 
   // ----------------------------------------------------------------------
-  // RENDERIZADO
+  // RENDERIZADOS
   // ----------------------------------------------------------------------
-
   const renderCommunityItem = ({ item }: { item: Community }) => (
     <Pressable
-      onPress={() => setSelectedCommunity(item)}
+      onPress={() => loadPostsForCommunity(item)}
       className={`mb-4 flex-row items-center rounded-2xl border p-4 shadow-sm active:opacity-80 ${
         isDark ? 'border-slate-700 bg-slate-900' : 'border-sky-200 bg-white'
       }`}
@@ -215,7 +191,7 @@ export function CommunitiesStudentMainScreen() {
     </Pressable>
   );
 
-  const renderPostItem = ({ item }: { item: (typeof INITIAL_POSTS)[0] }) => (
+  const renderPostItem = ({ item }: { item: Post }) => (
     <View
       className={`mb-4 rounded-2xl border p-4 shadow-sm ${
         isDark ? 'border-slate-700 bg-slate-900' : 'border-sky-200 bg-white'
@@ -223,7 +199,11 @@ export function CommunitiesStudentMainScreen() {
     >
       <View className="mb-3 flex-row items-center">
         <Image
-          source={{ uri: item.avatar }}
+          source={{
+            uri:
+              item.avatarUrl ||
+              `https://i.pravatar.cc/150?u=${item.authorGithubId}`,
+          }}
           className="h-10 w-10 rounded-full bg-slate-700"
         />
         <View className="ml-3">
@@ -232,14 +212,20 @@ export function CommunitiesStudentMainScreen() {
               isDark ? 'text-slate-50' : 'text-slate-900'
             }`}
           >
-            {item.author}
+            {item.authorName}
           </Text>
           <Text
             className={`text-xs ${
               isDark ? 'text-slate-400' : 'text-slate-500'
             }`}
           >
-            {item.role} • {item.time}
+            {item.role} •{' '}
+            {new Date(item.timestamp).toLocaleString('es-MX', {
+              hour: '2-digit',
+              minute: '2-digit',
+              day: '2-digit',
+              month: '2-digit',
+            })}
           </Text>
         </View>
       </View>
@@ -253,12 +239,10 @@ export function CommunitiesStudentMainScreen() {
     </View>
   );
 
+  // ----------------------------------------------------------------------
   // VISTA DETALLE DE COMUNIDAD
+  // ----------------------------------------------------------------------
   if (selectedCommunity) {
-    const communityPosts = posts.filter(
-      (post) => post.communityId === selectedCommunity.id,
-    );
-
     return (
       <SafeAreaView
         className={`flex-1 ${isDark ? 'bg-slate-950' : 'bg-sky-100'}`}
@@ -266,7 +250,6 @@ export function CommunitiesStudentMainScreen() {
       >
         <StatusBar style={isDark ? 'light' : 'dark'} />
 
-        {/* Header Detalle */}
         <View
           className={`flex-row items-center border-b px-4 pt-2 pb-4 ${
             isDark
@@ -306,34 +289,42 @@ export function CommunitiesStudentMainScreen() {
           </View>
         </View>
 
-        {/* LISTA DE POSTS */}
-        <FlatList
-          data={communityPosts}
-          keyExtractor={(item) => item.id}
-          renderItem={renderPostItem}
-          contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View className="mt-10 items-center">
-              <Text
-                className={`mb-2 text-center ${
-                  isDark ? 'text-slate-400' : 'text-slate-600'
-                }`}
-              >
-                No hay publicaciones aún.
-              </Text>
-              <Text
-                className={`text-center text-xs ${
-                  isDark ? 'text-slate-500' : 'text-slate-500'
-                }`}
-              >
-                ¡Sé el primero en escribir!
-              </Text>
-            </View>
-          }
-        />
+        {loadingPosts ? (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator
+              size="large"
+              color={isDark ? 'white' : 'black'}
+            />
+          </View>
+        ) : (
+          <FlatList
+            data={posts}
+            keyExtractor={(item) => item.id}
+            renderItem={renderPostItem}
+            contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View className="mt-10 items-center">
+                <Text
+                  className={`mb-2 text-center ${
+                    isDark ? 'text-slate-400' : 'text-slate-600'
+                  }`}
+                >
+                  No hay publicaciones aún.
+                </Text>
+                <Text
+                  className={`text-center text-xs ${
+                    isDark ? 'text-slate-500' : 'text-slate-500'
+                  }`}
+                >
+                  ¡Sé el primero en escribir!
+                </Text>
+              </View>
+            }
+          />
+        )}
 
-        {/* BOTÓN FLOTANTE (FAB) */}
+        {/* FAB */}
         <TouchableOpacity
           className={`absolute right-6 bottom-20 z-50 h-14 w-14 items-center justify-center rounded-full shadow-lg ${selectedCommunity.color}`}
           onPress={() => setModalVisible(true)}
@@ -382,9 +373,9 @@ export function CommunitiesStudentMainScreen() {
                 </Text>
                 <TouchableOpacity
                   onPress={handlePublish}
-                  disabled={postText.length === 0}
+                  disabled={!postText.trim()}
                   className={`rounded-full px-4 py-1.5 ${
-                    postText.length > 0
+                    postText.trim()
                       ? selectedCommunity.color
                       : isDark
                         ? 'bg-slate-700'
@@ -413,13 +404,16 @@ export function CommunitiesStudentMainScreen() {
     );
   }
 
+  // ----------------------------------------------------------------------
   // VISTA LISTA PRINCIPAL
+  // ----------------------------------------------------------------------
   return (
     <SafeAreaView
       className={`flex-1 ${isDark ? 'bg-slate-950' : 'bg-sky-100'}`}
       style={{ paddingTop: androidPaddingTop }}
     >
       <StatusBar style={isDark ? 'light' : 'dark'} />
+
       <View
         className={`border-b px-5 pt-6 pb-4 ${
           isDark ? 'border-slate-800 bg-slate-950' : 'border-sky-200 bg-sky-100'
@@ -437,19 +431,25 @@ export function CommunitiesStudentMainScreen() {
             isDark ? 'text-slate-300' : 'text-slate-600'
           }`}
         >
-          Explora los {DUMMY_COMMUNITIES.length} grupos disponibles
+          Explora los {communities.length} grupos disponibles
         </Text>
       </View>
 
-      <FlatList
-        data={DUMMY_COMMUNITIES}
-        keyExtractor={(item) => item.id}
-        renderItem={renderCommunityItem}
-        contentContainerStyle={{ padding: 20, paddingBottom: 32 }}
-        initialNumToRender={10}
-        maxToRenderPerBatch={10}
-        windowSize={5}
-      />
+      {loadingCommunities ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color={isDark ? 'white' : 'black'} />
+        </View>
+      ) : (
+        <FlatList
+          data={communities}
+          keyExtractor={(item) => item.id}
+          renderItem={renderCommunityItem}
+          contentContainerStyle={{ padding: 20, paddingBottom: 32 }}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+        />
+      )}
     </SafeAreaView>
   );
 }
