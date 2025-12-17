@@ -1,0 +1,29 @@
+{
+  "entry": [
+    "./app/**/*.ts",
+    "./app/**/*.tsx",
+    "./app/**/*.js",
+    "./app/**/*.jsx"
+  ],
+  "scannedDirs": ["./"],
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/.expo/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/*.d.ts",
+    "**/*.test.*",
+    "**/*.spec.*",
+    "**/__tests__/**",
+    "eslint.config.js",
+    "metro.config.js",
+    "scripts/**"
+  ],
+  "aliases": {
+    "@/*": ["./*"]
+  },
+  "ignoreUnimported": [
+    "**/components/ui/icon-symbol.ios.tsx",
+    "**/hooks/use-color-scheme.web.ts"
+  ]
+}
