@@ -1,5 +1,2 @@
-# Regla global: cualquier cambio requiere revisión de alguno de estos owners
 * @Maizestream818 @SaulAG122
-
-# Protege este mismo archivo (evita que lo cambien sin que ustedes lo aprueben)
-.github/CODEOWNERS @Maizestream818 @SaulAG122
+/.github/CODEOWNERS @Maizestream818 @SaulAG122
