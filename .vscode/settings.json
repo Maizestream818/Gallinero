@@ -8,5 +8,6 @@
   "editor.formatOnSave": true,
   "notebook.defaultFormatter": "esbenp.prettier-vscode",
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "prettier.prettierPath": "node_modules/prettier"
+  "prettier.prettierPath": "node_modules/prettier",
+  "files.eol": "\n"
 }
