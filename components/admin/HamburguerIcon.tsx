@@ -1,5 +1,5 @@
-import React from "react";
-import { View } from "react-native";
+import React from 'react';
+import { View } from 'react-native';
 //Compoente que forma el botón del menú 
 type Props = {
   size?: number;//Ancho de icono

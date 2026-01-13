@@ -1,5 +1,5 @@
-import React from "react";
-import { Modal, Pressable, Text, View, StyleSheet } from "react-native";
+import React from 'react';
+import { Modal, Pressable, Text, View, StyleSheet } from 'react-native';
 
 //Este componente representa los estilos del menú
 type Props = {

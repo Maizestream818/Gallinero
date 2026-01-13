@@ -1,11 +1,11 @@
 // features/user/screens/admin/UserAdminMainScreen.tsx
-import { StatusBar } from "expo-status-bar";
-import React, { useState } from "react";
-import { View, ScrollView } from "react-native";
+import { StatusBar } from 'expo-status-bar';
+import React, { useState } from 'react';
+import { Text,View, ScrollView } from 'react-native';
 
-import { AdminHeader } from "@/components/admin/AdminHeader";
-import { InfoRow } from "@/components/admin/InfoRow";
-import { OptionsMenuModal } from "@/components/ui/OptionsMenuModal";
+import { AdminHeader } from '@/components/admin/AdminHeader';
+import { InfoRow } from '@/components/admin/InfoRow';
+import { OptionsMenuModal } from '@/components/ui/OptionsMenuModal';
 
 //Pantalla de informacion del administrador 
 export function UserAdminMainScreen() {

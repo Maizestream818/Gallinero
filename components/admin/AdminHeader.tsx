@@ -1,6 +1,6 @@
-import React, { ReactNode } from "react";
-import { View, Text, SafeAreaView, Pressable, Image } from "react-native";
-import { HamburgerIcon } from "./HamburguerIcon";
+import React, { ReactNode } from 'react';
+import { View, Text, SafeAreaView, Pressable, Image } from 'react-native';
+import { HamburgerIcon } from './HamburguerIcon';
 
 //Este componente representa la credencial del usuario administrador
 //Recibe informacion básica del usuario que se muestra en el layout
