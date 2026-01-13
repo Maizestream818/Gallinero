@@ -25,6 +25,9 @@ export function UserAdminMainScreen() {
   };
 
   return (
+    <View className="flex-1 items bg-slate-900">
+    <StatusBar style="light"/>
+
     <View className="flex-1 bg-slate-100">
       <StatusBar style="dark" />
 
@@ -56,6 +59,7 @@ export function UserAdminMainScreen() {
           // OJO: Conectar el logout real después
         }}
       />
+    </View>
     </View>
   );
 }
