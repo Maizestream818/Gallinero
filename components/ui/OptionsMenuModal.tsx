@@ -1,11 +1,12 @@
 import React from 'react';
-import { Modal, Pressable, Text, View, StyleSheet } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 //Este componente representa los estilos del menú
 type Props = {
   visible: boolean;
   onClose: () => void;
-  onLogout?: () => void; 
+  onLogout?: () => void;
+  onQR?: () => void;
   title?: string;
 };
 
@@ -13,8 +14,9 @@ type Props = {
 export function OptionsMenuModal({
   visible,
   onClose,
+  onQR,
   onLogout,
-  title = "OPCIONES",
+  title = 'OPCIONES',
 }: Props) {
   return (
     <Modal
@@ -24,14 +26,25 @@ export function OptionsMenuModal({
       onRequestClose={onClose} //Necesario para Android ya que es el "Botón atras"
     >
       <View style={styles.modalRoot}>
-        
         <Pressable style={styles.backdrop} onPress={onClose} />
 
-        
         <View style={styles.menuPanel}>
           <Text style={styles.menuTitle}>{title}</Text>
 
           <View style={styles.divider} />
+
+          {/*  nuevo BOTON QR  */}
+          {onQR && (
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => {
+                onClose();
+                onQR();
+              }}
+            >
+              <Text style={styles.optionText}>Código QR</Text>
+            </Pressable>
+          )}
 
           <Pressable
             style={styles.menuItem}
@@ -52,33 +65,32 @@ export function OptionsMenuModal({
   );
 }
 
-
-//Estilos para el menú 
+//Estilos para el menú
 const styles = StyleSheet.create({
   modalRoot: {
     flex: 1,
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.30)",
+    backgroundColor: 'rgba(0,0,0,0.30)',
   },
   //Panel flotante del menú
   menuPanel: {
-    position: "absolute",
+    position: 'absolute',
     right: 16,
     top: 70,
     width: 240,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: '#E2E8F0',
 
     // Android
     elevation: 12,
 
     // iOS
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.18,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
@@ -86,8 +98,8 @@ const styles = StyleSheet.create({
   //Estilo del título del menú
   menuTitle: {
     fontSize: 12,
-    fontWeight: "700",
-    color: "#64748B",
+    fontWeight: '700',
+    color: '#64748B',
     paddingHorizontal: 8,
     paddingVertical: 6,
     letterSpacing: 1,
@@ -95,7 +107,7 @@ const styles = StyleSheet.create({
   //Separador visual
   divider: {
     height: 1,
-    backgroundColor: "#E2E8F0",
+    backgroundColor: '#E2E8F0',
     marginVertical: 6,
   },
   menuItem: {
@@ -104,11 +116,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   logoutText: {
-    color: "#DC2626",
-    fontWeight: "700",
+    color: '#DC2626',
+    fontWeight: '700',
   },
+  optionText: {
+    color: '#1E293B',
+    fontWeight: '600',
+  },
+
   cancelText: {
-    color: "#334155",
-    fontWeight: "600",
+    color: '#334155',
+    fontWeight: '600',
   },
 });

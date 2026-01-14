@@ -4,13 +4,14 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { AdminHeader } from '@/components/user/AdminHeader';
-import { InfoRow } from '@/components/user/InfoRow';
 import { OptionsMenuModal } from '@/components/ui/OptionsMenuModal';
-
+import { InfoRow } from '@/components/admin/InfoRow';
+import { AdminHeader } from '@/components/admin/AdminHeader';
+import { QR } from '@/components/user/QR';
 export function UserStudentMainScreen() {
   // Estado para abrir/cerrar menú hamburguesa
   const [menuVisible, setMenuVisible] = useState(false);
+  const [qrVisible, setQrVisible] = useState(false);
 
   // Información simulada del administrador de momento
   // ASEGURAR DE CAMBIAR AL MOMENTO DE CONECTAR EL BACKEND
@@ -18,7 +19,7 @@ export function UserStudentMainScreen() {
     id: '242453',
     nombre: 'Luis Fernando Navarro Lozano',
     correo: 'alumno@correo.com',
-    carrera: 'Ingeniería en Sistemas Computacionales',
+    carrera: 'comunicación',
     grado: '8to Semestre',
     grupo: 'B',
     sexo: 'Masculino',
@@ -38,7 +39,7 @@ export function UserStudentMainScreen() {
             topTitle="Mi Credencial"
             subtitle="Identificación Digital Oficial"
             name={admin.nombre}
-            roleLabel="ADMINISTRADOR"
+            roleLabel="Alumno"
             idLabel={`ID: ${admin.id}`}
             photoUri={admin.foto}
             onOpenMenu={() => setMenuVisible(true)}
@@ -48,23 +49,33 @@ export function UserStudentMainScreen() {
             <InfoRow label="Grado" value={admin.grado} />
             <InfoRow label="Grupo" value={admin.grupo} />
             <InfoRow
-              label="Nivel Académico"
+              label="Nivel Academico"
               value={admin.nivel_academico}
               isLast
             />
           </AdminHeader>
-
           <View className="h-6" />
         </ScrollView>
 
-        {/* Menú hamburguesa como componente reutilizable */}
+        {/* Menu hamburguesa */}
         <OptionsMenuModal
           visible={menuVisible}
           onClose={() => setMenuVisible(false)}
+          onQR={() => {
+            setMenuVisible(false); 
+            setTimeout(() => setQrVisible(true), 300);
+          }}
           onLogout={() => {
             console.log('Cerrar sesión');
-            // OJO: Conectar el logout real después
           }}
+        />
+
+        {/* Componente QR */}
+        <QR
+          visible={qrVisible}
+          onClose={() => setQrVisible(false)}
+          userName={admin.nombre}
+          userId={admin.id}
         />
       </View>
     </View>
