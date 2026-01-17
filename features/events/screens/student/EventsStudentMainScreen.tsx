@@ -100,7 +100,7 @@ export function EventsStudentMainScreen() {
 
   function renderEventCard(event: EventStudentItem) {
     return (
-      <View key={event.id} className="mb-3 w-1/2 px-1">
+      <View key={event.id} className="mb-3 w-full">
         {event.imageUrl ? (
           <EventCardWithImage event={event} onPress={handleOpenEvent} />
         ) : (
@@ -140,7 +140,7 @@ export function EventsStudentMainScreen() {
                 <Text className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
                   Hoy
                 </Text>
-                <View className="mt-2 h-1 w-24 rounded-full bg-slate-300 dark:bg-slate-600" />
+                <View className="mt-2 h-1 w-28 rounded-full bg-slate-300 dark:bg-slate-600" />
               </View>
               <Text className="mb-1 text-xs font-semibold text-slate-500 dark:text-slate-300">
                 {todayEvents.length} evento(s)
@@ -154,7 +154,7 @@ export function EventsStudentMainScreen() {
                 </Text>
               </View>
             ) : (
-              <View className="-mx-1 flex-row flex-wrap">
+              <View className="flex-col">
                 {todayEvents.map(renderEventCard)}
               </View>
             )}
@@ -167,7 +167,7 @@ export function EventsStudentMainScreen() {
                 <Text className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
                   Esta semana
                 </Text>
-                <View className="mt-2 h-1 w-32 rounded-full bg-slate-300 dark:bg-slate-600" />
+                <View className="mt-2 h-1 w-28 rounded-full bg-slate-300 dark:bg-slate-600" />
               </View>
               <Text className="mb-1 text-xs font-semibold text-slate-500 dark:text-slate-300">
                 {weekEvents.length} evento(s)
@@ -181,7 +181,7 @@ export function EventsStudentMainScreen() {
                 </Text>
               </View>
             ) : (
-              <View className="-mx-1 flex-row flex-wrap">
+              <View className="flex-col">
                 {weekEvents.map(renderEventCard)}
               </View>
             )}
@@ -194,7 +194,7 @@ export function EventsStudentMainScreen() {
                 <Text className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
                   Eventos próximos
                 </Text>
-                <View className="mt-2 h-1 w-40 rounded-full bg-slate-300 dark:bg-slate-600" />
+                <View className="mt-2 h-1 w-28 rounded-full bg-slate-300 dark:bg-slate-600" />
               </View>
               <Text className="mb-1 text-xs font-semibold text-slate-500 dark:text-slate-300">
                 {upcomingEvents.length} evento(s)
@@ -208,7 +208,7 @@ export function EventsStudentMainScreen() {
                 </Text>
               </View>
             ) : (
-              <View className="-mx-1 flex-row flex-wrap">
+              <View className="flex-col">
                 {upcomingEvents.map(renderEventCard)}
               </View>
             )}

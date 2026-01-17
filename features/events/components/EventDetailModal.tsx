@@ -82,10 +82,10 @@ export function EventDetailModal({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <View className="flex-1 items-center justify-center bg-slate-950/70">
+      <View className="flex-1 items-center justify-center bg-slate-950/60">
         <Pressable onPress={onClose} className="absolute inset-0" />
 
-        <View className="z-10 max-h-[80%] w-[94%] overflow-hidden rounded-3xl bg-slate-50 shadow-2xl dark:bg-slate-900 dark:shadow-black/60">
+        <View className="z-10 max-h-[80%] w-[94%] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-800 dark:shadow-black/60">
           <ScrollView
             contentContainerClassName="px-5 pt-4 pb-5"
             showsVerticalScrollIndicator
@@ -109,9 +109,9 @@ export function EventDetailModal({
 
               <Pressable
                 onPress={onClose}
-                className="rounded-full bg-slate-900 px-3 py-1 dark:bg-slate-100"
+                className="rounded-full border border-slate-200 bg-white px-3 py-1 dark:border-slate-700 dark:bg-slate-900"
               >
-                <Text className="text-xs font-semibold text-slate-50 dark:text-slate-900">
+                <Text className="text-xs font-semibold text-slate-700 dark:text-slate-200">
                   Cerrar
                 </Text>
               </Pressable>
@@ -119,7 +119,7 @@ export function EventDetailModal({
 
             {/* Nombre */}
             <View className="mt-3">
-              <Text className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              <Text className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
                 Nombre
               </Text>
               <Text className="mt-1 text-base text-slate-900 dark:text-slate-100">
@@ -130,16 +130,16 @@ export function EventDetailModal({
             {/* Fecha y hora */}
             <View className="mt-3 flex-row gap-6">
               <View className="flex-1">
-                <Text className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                <Text className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
                   Fecha
                 </Text>
-                <Text className="mt-1 text-sm text-slate-900 dark:text-slate-100">
+                <Text className="mt-1 text-sm text-slate-900 dark:text-slate-50">
                   {dateLabel}
                 </Text>
               </View>
 
               <View className="flex-1">
-                <Text className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                <Text className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
                   Hora
                 </Text>
                 <Text className="mt-1 text-sm text-slate-900 dark:text-slate-100">
@@ -150,7 +150,7 @@ export function EventDetailModal({
 
             {/* Lugar */}
             <View className="mt-3">
-              <Text className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              <Text className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
                 Lugar
               </Text>
               <Text className="mt-1 text-sm text-slate-900 dark:text-slate-100">
@@ -160,7 +160,7 @@ export function EventDetailModal({
 
             {/* Descripción */}
             <View className="mt-3">
-              <Text className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              <Text className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
                 Descripción
               </Text>
               <Text className="mt-1 text-sm leading-relaxed text-slate-900 dark:text-slate-100">
@@ -170,7 +170,7 @@ export function EventDetailModal({
 
             {/* Etiquetas */}
             <View className="mt-3">
-              <Text className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              <Text className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
                 Etiquetas
               </Text>
 
@@ -179,16 +179,16 @@ export function EventDetailModal({
                   {tags.map((tag) => (
                     <View
                       key={tag}
-                      className="rounded-full bg-slate-200 px-3 py-1 dark:bg-slate-700"
+                      className="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-700"
                     >
-                      <Text className="text-xs font-semibold text-slate-900 dark:text-slate-50">
+                      <Text className="text-[11px] font-semibold text-slate-700 dark:text-slate-100">
                         {tag}
                       </Text>
                     </View>
                   ))}
                 </View>
               ) : (
-                <Text className="mt-1 text-sm text-slate-400 dark:text-slate-500">
+                <Text className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                   Sin etiquetas.
                 </Text>
               )}
@@ -196,7 +196,7 @@ export function EventDetailModal({
 
             {/* Duración */}
             <View className="mt-3">
-              <Text className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              <Text className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
                 Duración
               </Text>
               <Text className="mt-1 text-sm text-slate-900 dark:text-slate-100">
