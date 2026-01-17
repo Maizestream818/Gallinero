@@ -2,7 +2,7 @@
 // Pantalla principal de eventos para alumno (Student).
 // - Lista eventos en secciones "Hoy", "Esta semana" y "Eventos próximos".
 // - Usa EventCardWithImage / EventCardNoImage.
-// - Las cards se muestran en un grid de 2 columnas.
+// - Las cards se muestran en un grid de 1 columna
 // - Al tocar una card, abre el EventDetailModal (splash) con el detalle del evento.
 
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
