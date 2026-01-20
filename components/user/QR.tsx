@@ -1,6 +1,6 @@
-// components/user/QR.tsx
 import React, { useEffect, useState } from 'react';
 import { Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Barra } from './Barra';
 
 type Props = {
   visible: boolean;
@@ -11,6 +11,7 @@ type Props = {
 
 export function QR({ visible, onClose, userName, userId }: Props) {
   const [timestamp, setTimestamp] = useState(Date.now());
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (visible) {
@@ -23,6 +24,9 @@ export function QR({ visible, onClose, userName, userId }: Props) {
       if (interval) clearInterval(interval);
     };
   }, [visible]);
+  const handleRefresh = () => {
+    setTimestamp(Date.now());
+  };
 
   // Valor que se manda al QR
   const qrValue = `ALUMNO:${userId}|TIME:${timestamp}`;
@@ -56,6 +60,11 @@ export function QR({ visible, onClose, userName, userId }: Props) {
             <Text className="text-xs text-gray-400">ID: {userId}</Text>
           </View>
 
+          {/* Componente de la barra de progreso */}
+          {visible && (
+            <Barra duration={10000} onTimeout={handleRefresh} />
+          )}
+    
           {/* Botón */}
           <Pressable
             onPress={onClose}

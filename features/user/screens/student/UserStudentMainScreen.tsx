@@ -4,9 +4,9 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { OptionsMenuModal } from '@/components/ui/OptionsMenuModal';
-import { InfoRow } from '@/components/admin/InfoRow';
 import { AdminHeader } from '@/components/admin/AdminHeader';
+import { InfoRow } from '@/components/admin/InfoRow';
+import { OptionsMenuModal } from '@/components/ui/OptionsMenuModal';
 import { QR } from '@/components/user/QR';
 export function UserStudentMainScreen() {
   // Estado para abrir/cerrar menú hamburguesa
@@ -62,7 +62,7 @@ export function UserStudentMainScreen() {
           visible={menuVisible}
           onClose={() => setMenuVisible(false)}
           onQR={() => {
-            setMenuVisible(false); 
+            setMenuVisible(false);
             setTimeout(() => setQrVisible(true), 300);
           }}
           onLogout={() => {
