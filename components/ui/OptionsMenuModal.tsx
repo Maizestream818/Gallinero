@@ -7,6 +7,7 @@ type Props = {
   onClose: () => void;
   onLogout?: () => void;
   onQR?: () => void;
+  onEdit?: () => void;
   title?: string;
 };
 
@@ -16,6 +17,7 @@ export function OptionsMenuModal({
   onClose,
   onQR,
   onLogout,
+  onEdit,
   title = 'OPCIONES',
 }: Props) {
   return (
@@ -33,7 +35,7 @@ export function OptionsMenuModal({
 
           <View style={styles.divider} />
 
-          {/*  nuevo BOTON QR  */}
+          {/*  BOTON QR  */}
           {onQR && (
             <Pressable
               style={styles.menuItem}
@@ -45,6 +47,21 @@ export function OptionsMenuModal({
               <Text style={styles.optionText}>Código QR</Text>
             </Pressable>
           )}
+
+          {/*  EDITAR  */}
+          {onEdit && (
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => {
+                onClose();
+                onEdit();
+              }}
+            >
+              <Text style={styles.optionText}>Editar Información</Text>
+            </Pressable>
+          )}
+
+          
 
           <Pressable
             style={styles.menuItem}

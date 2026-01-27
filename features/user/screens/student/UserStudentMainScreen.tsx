@@ -8,14 +8,17 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { InfoRow } from '@/components/admin/InfoRow';
 import { OptionsMenuModal } from '@/components/ui/OptionsMenuModal';
 import { QR } from '@/components/user/QR';
+import { UserEditProfileModal } from '@/components/user/UserEditProfileModal';
+
 export function UserStudentMainScreen() {
   // Estado para abrir/cerrar menú hamburguesa
   const [menuVisible, setMenuVisible] = useState(false);
   const [qrVisible, setQrVisible] = useState(false);
+  const [editVisible, setEditVisible] = useState(false);
 
   // Información simulada del administrador de momento
   // ASEGURAR DE CAMBIAR AL MOMENTO DE CONECTAR EL BACKEND
-  const admin = {
+  const [user, setUser ] =  useState({
     id: '242453',
     nombre: 'Luis Fernando Navarro Lozano',
     correo: 'alumno@correo.com',
@@ -25,7 +28,7 @@ export function UserStudentMainScreen() {
     sexo: 'Masculino',
     nivel_academico: 'Licenciatura',
     foto: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300',
-  };
+  });
 
   return (
     <View className="items flex-1 bg-slate-900">
@@ -38,22 +41,24 @@ export function UserStudentMainScreen() {
           <AdminHeader
             topTitle="Mi Credencial"
             subtitle="Identificación Digital Oficial"
-            name={admin.nombre}
+            name={user.nombre}
             roleLabel="Alumno"
-            idLabel={`ID: ${admin.id}`}
-            photoUri={admin.foto}
+            idLabel={`ID: ${user.id}`}
+            photoUri={user.foto}
             onOpenMenu={() => setMenuVisible(true)}
           >
-            <InfoRow label="Correo" value={admin.correo} />
-            <InfoRow label="Carrera" value={admin.carrera} />
-            <InfoRow label="Grado" value={admin.grado} />
-            <InfoRow label="Grupo" value={admin.grupo} />
+            <InfoRow label="Correo" value={user.correo} />
+            <InfoRow label="Carrera" value={user.carrera} />
+            <InfoRow label="Grado" value={user.grado} />
+            <InfoRow label="Grupo" value={user.grupo} />
+
+
             <InfoRow
               label="Nivel Academico"
-              value={admin.nivel_academico}
+              value={user.nivel_academico}
               isLast
             />
-          </AdminHeader>
+          </AdminHeader> 
           <View className="h-6" />
         </ScrollView>
 
@@ -65,17 +70,28 @@ export function UserStudentMainScreen() {
             setMenuVisible(false);
             setTimeout(() => setQrVisible(true), 300);
           }}
+          onEdit={() => {                   
+             setMenuVisible(false);
+             setTimeout(() => setEditVisible(true), 300);
+          }}
           onLogout={() => {
             console.log('Cerrar sesión');
-          }}
+          }} 
         />
-
         {/* Componente QR */}
         <QR
           visible={qrVisible}
           onClose={() => setQrVisible(false)}
-          userName={admin.nombre}
-          userId={admin.id}
+          userName={user.nombre}
+          userId={user.id}
+        />
+
+        {/* editar */}
+        <UserEditProfileModal 
+          visible={editVisible}
+          onClose={() => setEditVisible(false)}
+          user={user}          
+          onSave={setUser}     
         />
       </View>
     </View>
