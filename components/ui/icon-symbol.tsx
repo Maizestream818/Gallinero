@@ -16,11 +16,15 @@ type IconSymbolName = keyof typeof MAPPING;
  * - see Material Icons in the [Icons Directory](https://icons.expo.fyi).
  * - see SF Symbols in the [SF Symbols](https://developer.apple.com/sf-symbols/) app.
  */
+//Se agregaron dos iconos más para el manejo del menú inferior que es indispensable para la navegación
+//Se agregó el icono person.3.fill groups y person.crop.circle.fill person, los cuales fueron para comunidad y perfil
 const MAPPING = {
   'house.fill': 'home',
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
+  'person.3.fill': 'groups', 
+  'person.crop.circle.fill': 'person',
 } as IconMapping;
 
 /**

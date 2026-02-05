@@ -161,25 +161,25 @@ export function EventCardWithImage({
     return { rowsToRender: null, overflowCount: total };
   }, [sortedTags, rowWidth, chipWidths, plusChipWidthWorstCase]);
 
-  return (
+    return (
     <Pressable
       onPress={() => onPress(event)}
-      className="h-56 overflow-hidden rounded-2xl bg-slate-800/95 dark:bg-slate-800"
+      className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
     >
-      {/* Imagen superior*/}
+      {/* Imagen superior */}
       {event.imageUrl ? (
         <Image
           source={{ uri: event.imageUrl }}
-          className="h-24 w-full"
+          className="h-32 w-full"
           resizeMode="cover"
         />
       ) : null}
 
       {/* Contenido inferior */}
-      <View className="flex-1 p-3">
-        {/* Título: si excede 2 líneas, aparece "..." */}
+      <View className="p-4">
+        {/* Título */}
         <Text
-          className="text-sm font-semibold text-slate-50"
+          className="text-base font-semibold text-slate-900 dark:text-slate-50"
           numberOfLines={2}
           ellipsizeMode="tail"
         >
@@ -189,7 +189,7 @@ export function EventCardWithImage({
         {/* Chips: máximo 2 filas */}
         {sortedTags.length > 0 ? (
           <View
-            className="mt-2"
+            className="mt-3"
             onLayout={(e) => setRowWidth(e.nativeEvent.layout.width)}
           >
             {rowsToRender ? (
@@ -201,10 +201,10 @@ export function EventCardWithImage({
                       const key =
                         item.type === 'plus' ? `plus-${item.label}` : item.id;
                       return (
-                        <View key={key} className={idx === 0 ? '' : 'ml-1'}>
-                          <View className="rounded-full bg-slate-700 px-2 py-0.5 dark:bg-slate-700">
+                        <View key={key} className={idx === 0 ? '' : 'ml-2'}>
+                          <View className="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-700">
                             <Text
-                              className="text-[10px] font-semibold text-slate-50"
+                              className="text-[11px] font-semibold text-slate-700 dark:text-slate-100"
                               numberOfLines={1}
                               ellipsizeMode="tail"
                             >
@@ -219,15 +219,15 @@ export function EventCardWithImage({
 
                 {/* Fila 2 */}
                 {rowsToRender[1].length > 0 ? (
-                  <View className="mt-1 flex-row items-center">
+                  <View className="mt-2 flex-row items-center">
                     {rowsToRender[1].map((item, idx) => {
                       const key =
                         item.type === 'plus' ? `plus-${item.label}` : item.id;
                       return (
-                        <View key={key} className={idx === 0 ? '' : 'ml-1'}>
-                          <View className="rounded-full bg-slate-700 px-2 py-0.5 dark:bg-slate-700">
+                        <View key={key} className={idx === 0 ? '' : 'ml-2'}>
+                          <View className="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-700">
                             <Text
-                              className="text-[10px] font-semibold text-slate-50"
+                              className="text-[11px] font-semibold text-slate-700 dark:text-slate-100"
                               numberOfLines={1}
                               ellipsizeMode="tail"
                             >
@@ -242,6 +242,7 @@ export function EventCardWithImage({
               </>
             ) : null}
 
+            {/* Medición invisible */}
             <View
               pointerEvents="none"
               style={{ position: 'absolute', left: 0, top: 0, opacity: 0 }}
@@ -250,7 +251,7 @@ export function EventCardWithImage({
                 {sortedTags.map((t, i) => (
                   <View
                     key={`measure-${t.id}`}
-                    className={i === 0 ? '' : 'ml-1'}
+                    className={i === 0 ? '' : 'ml-2'}
                     onLayout={(e) => {
                       const w = e.nativeEvent.layout.width;
                       setChipWidths((prev) => {
@@ -259,9 +260,9 @@ export function EventCardWithImage({
                       });
                     }}
                   >
-                    <View className="rounded-full bg-slate-700 px-2 py-0.5 dark:bg-slate-700">
+                    <View className="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-700">
                       <Text
-                        className="text-[10px] font-semibold text-slate-50"
+                        className="text-[11px] font-semibold text-slate-700 dark:text-slate-100"
                         numberOfLines={1}
                       >
                         {t.label}
@@ -271,14 +272,14 @@ export function EventCardWithImage({
                 ))}
 
                 <View
-                  className={sortedTags.length > 0 ? 'ml-1' : ''}
+                  className={sortedTags.length > 0 ? 'ml-2' : ''}
                   onLayout={(e) =>
                     setPlusChipWidthWorstCase(e.nativeEvent.layout.width)
                   }
                 >
-                  <View className="rounded-full bg-slate-700 px-2 py-0.5 dark:bg-slate-700">
+                  <View className="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-700">
                     <Text
-                      className="text-[10px] font-semibold text-slate-50"
+                      className="text-[11px] font-semibold text-slate-700 dark:text-slate-100"
                       numberOfLines={1}
                     >
                       +{sortedTags.length}
@@ -287,11 +288,10 @@ export function EventCardWithImage({
                 </View>
               </View>
             </View>
-
-            {overflowCount < 0 ? null : null}
           </View>
         ) : null}
       </View>
     </Pressable>
   );
+
 }

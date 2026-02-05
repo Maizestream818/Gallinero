@@ -31,16 +31,16 @@ export default function TabLayout() {
         options={{
           title: 'Comunidades',
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="paperplane.fill" color={color} />
+            <IconSymbol size={28} name="person.3.fill" color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="user"
         options={{
-          title: 'Usuario',
+          title: 'Perfil',
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="paperplane.fill" color={color} />
+            <IconSymbol size={28} name="person.crop.circle.fill" color={color} />
           ),
         }}
       />
