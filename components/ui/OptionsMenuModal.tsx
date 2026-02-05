@@ -1,3 +1,5 @@
+import { useAuth } from '@/features/auth/AuthContext';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -16,10 +18,17 @@ export function OptionsMenuModal({
   visible,
   onClose,
   onQR,
-  onLogout,
   onEdit,
   title = 'OPCIONES',
 }: Props) {
+  const router = useRouter();
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    router.replace('/login');
+  };
+
   return (
     <Modal
       visible={visible}
@@ -61,13 +70,11 @@ export function OptionsMenuModal({
             </Pressable>
           )}
 
-          
-
           <Pressable
             style={styles.menuItem}
             onPress={() => {
               onClose();
-              onLogout?.();
+              handleLogout();
             }}
           >
             <Text style={styles.logoutText}>Cerrar sesión</Text>

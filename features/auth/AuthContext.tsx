@@ -6,15 +6,18 @@ type Role = 'admin' | 'student' | null;
 type AuthContextValue = {
   role: Role;
   setRole: (role: Role) => void;
+  logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<Role>(null);
-
+  const logout = () => {
+    setRole(null);
+  };
   return (
-    <AuthContext.Provider value={{ role, setRole }}>
+    <AuthContext.Provider value={{ role, setRole, logout() {} }}>
       {children}
     </AuthContext.Provider>
   );
