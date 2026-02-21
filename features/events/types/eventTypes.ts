@@ -30,6 +30,7 @@ export type EventStudentItem = {
 
   // Etiquetas opcionales para clasificación/filtrado y visualización en UI como chips/badges.
   tags?: string[];
+  
 
   // Duración del evento en minutos.
   // Ejemplo: 90 = 1 hora 30 minutos.

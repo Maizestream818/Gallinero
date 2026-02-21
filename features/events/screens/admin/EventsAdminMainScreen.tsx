@@ -22,6 +22,7 @@ import { EventCardWithImage } from '@/features/events/components/EventCardWithIm
 import { EventDetailModal } from '@/features/events/components/EventDetailModal';
 import { EVENTS_SEED } from '@/features/events/components/EventSeed';
 import type { EventStudentItem } from '@/features/events/types/eventTypes';
+import { CategoryFilter } from '../../components/CategoryFilter';
 
 // -----------------------------------------------------------------------------
 // Utilidades de fechas
@@ -68,50 +69,57 @@ export function EventsAdminMainScreen() {
 
   const [searchText, setSearchText] = useState('');
 
-  const eventsBase = useMemo(() => [...EVENTS_SEED], []);//Con esto evitamos que cada render cree un arreglo nuevo y provoque recálculos innecesarios en los filtros
+  const eventsBase = useMemo(() => [...EVENTS_SEED], []); // Evitamos re-creación de array en cada render
 
   const { filtered: filteredEvents } = useEventSearch({
-  events: eventsBase,
-  query: searchText,
+    events: eventsBase,
+    query: searchText,
   });
+
   const [sectionFilter, setSectionFilter] = useState({
-  today: true,
-  week: true,
-  upcoming: true,
-});
-
-
+    today: true,
+    week: true,
+    upcoming: true,
+  });
 
   const now = new Date();
   const endOfWeek = getEndOfWeek(now);
+  
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+
+  // Filtrado por tags (categoría)
+  const filteredByTags = categoryFilter
+    ? filteredEvents.filter((event) => event.tags && event.tags.includes(categoryFilter))
+    : filteredEvents;  // Si no hay filtro, mostramos todos los eventos
+
+  // Verificar si hay eventos después del filtro
+  const filteredEventsCount = filteredByTags.length;
 
   const todayEvents: EventStudentItem[] = [];
   const weekEvents: EventStudentItem[] = [];
   const upcomingEvents: EventStudentItem[] = [];
 
-  for (const e of filteredEvents) {
-  const d = new Date(e.startsAtIso);
+  for (const e of filteredByTags) {
+    const d = new Date(e.startsAtIso);
 
-  if (sectionFilter.today && isSameLocalDay(now, d)) {
-    todayEvents.push(e);
-    continue;
+    if (sectionFilter.today && isSameLocalDay(now, d)) {
+      todayEvents.push(e);
+      continue;
+    }
+
+    if (
+      sectionFilter.week &&
+      d.getTime() > now.getTime() &&
+      d.getTime() <= endOfWeek.getTime()
+    ) {
+      weekEvents.push(e);
+      continue;
+    }
+
+    if (sectionFilter.upcoming && d.getTime() > endOfWeek.getTime()) {
+      upcomingEvents.push(e);
+    }
   }
-
-  if (
-    sectionFilter.week &&
-    d.getTime() > now.getTime() &&
-    d.getTime() <= endOfWeek.getTime()
-  ) {
-    weekEvents.push(e);
-    continue;
-  }
-
-  if (sectionFilter.upcoming && d.getTime() > endOfWeek.getTime()) {
-    upcomingEvents.push(e);
-  }
-}
-
-
 
   const sortByDate = (a: EventStudentItem, b: EventStudentItem) =>
     new Date(a.startsAtIso).getTime() - new Date(b.startsAtIso).getTime();
@@ -162,21 +170,24 @@ export function EventsAdminMainScreen() {
           <Text className="mt-4 text-base text-slate-600 dark:text-slate-300">
             Administre los eventos: revise los de hoy, esta semana y los próximos.
           </Text>
-           {/* Si no hay ninguna coincidencia con los filtros simplemente retorna un texto que menciona dicha acción */}
+
+          {/* Filtro de Categoría */}
+          <CategoryFilter categoryFilter={categoryFilter} setCategoryFilter={setCategoryFilter} />
+
+          {/* Filtro de búsqueda */}
           <EventsSearchBar value={searchText} onChange={setSearchText} />
+
+          {/* Filtro de secciones (Hoy, Esta semana, Próximos) */}
           <EventsSectionChecklist value={sectionFilter} onChange={setSectionFilter} />
-           {searchText.trim().length > 0 &&
-           todayEvents.length + weekEvents.length + upcomingEvents.length === 0 ? (
-           <View className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-           <Text className="text-sm text-slate-700 dark:text-slate-200">
-          No se encontraron eventos con “{searchText}”.
-          </Text>
-          </View>
-          ) : null}
-          
 
-
-
+          {/* Mostrar mensaje si no se encuentran eventos */}
+          {filteredEventsCount === 0 && (
+            <View className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+              <Text className="text-sm text-slate-700 dark:text-slate-200">
+                No se encontraron eventos con los filtros seleccionados.
+              </Text>
+            </View>
+          )}
 
           {/* Sección: Hoy */}
           <View className="mt-8">
@@ -261,19 +272,19 @@ export function EventsAdminMainScreen() {
           event={selectedEvent}
           onClose={handleCloseDetail}
         />
+
         {/* Botón de nuevo evento/publicación */}
         <Pressable
           onPress={() => setCreateModalVisible(true)}
           className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full bg-emerald-500 shadow-2xl dark:bg-emerald-400"
-          >
+        >
           <Text className="text-3xl font-bold text-white">+</Text>
         </Pressable>
 
         <AdminCreateEventFormModal
-         visible={createModalVisible}
-         onClose={() => setCreateModalVisible(false)}
+          visible={createModalVisible}
+          onClose={() => setCreateModalVisible(false)}
         />
-
       </View>
     </SafeAreaView>
   );
