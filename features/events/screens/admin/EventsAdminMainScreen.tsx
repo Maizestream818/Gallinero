@@ -9,20 +9,23 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
 import React, { useMemo, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Pressable } from 'react-native';
-import { AdminCreateEventFormModal } from '../../components/AdminCreateEventFormModal';
 
+// Componentes
+import { AdminCreateEventFormModal } from '../../components/AdminCreateEventFormModal';
 import { EventsSectionChecklist } from '../../components/EventsSectionChecklist';
 import { EventsSearchBar } from '@/features/events/components/EventsSearchBar';
 import { useEventSearch } from '@/hooks/useEventSearch';
 import { EventCardNoImage } from '@/features/events/components/EventCardNoImage';
 import { EventCardWithImage } from '@/features/events/components/EventCardWithImage';
 import { EventDetailModal } from '@/features/events/components/EventDetailModal';
+import { CategoryFilter } from '../../components/CategoryFilter';
+import { QRCodeScannerButton } from '../../components/QRCodeScannerButton';
+
+// Datos y Tipos
 import { EVENTS_SEED } from '@/features/events/components/EventSeed';
 import type { EventStudentItem } from '@/features/events/types/eventTypes';
-import { CategoryFilter } from '../../components/CategoryFilter';
 
 // -----------------------------------------------------------------------------
 // Utilidades de fechas
@@ -36,10 +39,9 @@ function isSameLocalDay(a: Date, b: Date): boolean {
   );
 }
 
-// Semana (lunes–domingo) con base en la fecha actual
 function getStartOfWeek(date: Date): Date {
   const d = new Date(date);
-  const day = d.getDay(); // 0 = domingo, 1 = lunes, ...
+  const day = d.getDay(); 
   const diff = day === 0 ? -6 : 1 - day;
   d.setDate(d.getDate() + diff);
   d.setHours(0, 0, 0, 0);
@@ -55,44 +57,37 @@ function getEndOfWeek(date: Date): Date {
 }
 
 // -----------------------------------------------------------------------------
-// Screen principal (Admin)
+// Screen principal (Admin) - USANDO EXPORT DEFAULT PARA EXPO ROUTER
 // -----------------------------------------------------------------------------
 
-export function EventsAdminMainScreen() {
+export default function EventsAdminMainScreen() {
   const tabBarHeight = useBottomTabBarHeight();
 
-  const [selectedEvent, setSelectedEvent] = useState<EventStudentItem | null>(
-    null,
-  );
-  
+  // Estados
+  const [selectedEvent, setSelectedEvent] = useState<EventStudentItem | null>(null);
   const [createModalVisible, setCreateModalVisible] = useState(false);
-
   const [searchText, setSearchText] = useState('');
-
-  const eventsBase = useMemo(() => [...EVENTS_SEED], []); // Evitamos re-creación de array en cada render
-
-  const { filtered: filteredEvents } = useEventSearch({
-    events: eventsBase,
-    query: searchText,
-  });
-
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [sectionFilter, setSectionFilter] = useState({
     today: true,
     week: true,
     upcoming: true,
   });
 
+  // Lógica de filtrado
+  const eventsBase = useMemo(() => [...EVENTS_SEED], []);
+  const { filtered: filteredEvents } = useEventSearch({
+    events: eventsBase,
+    query: searchText,
+  });
+
   const now = new Date();
   const endOfWeek = getEndOfWeek(now);
-  
-  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
 
-  // Filtrado por tags (categoría)
   const filteredByTags = categoryFilter
     ? filteredEvents.filter((event) => event.tags && event.tags.includes(categoryFilter))
-    : filteredEvents;  // Si no hay filtro, mostramos todos los eventos
+    : filteredEvents;
 
-  // Verificar si hay eventos después del filtro
   const filteredEventsCount = filteredByTags.length;
 
   const todayEvents: EventStudentItem[] = [];
@@ -101,21 +96,14 @@ export function EventsAdminMainScreen() {
 
   for (const e of filteredByTags) {
     const d = new Date(e.startsAtIso);
-
     if (sectionFilter.today && isSameLocalDay(now, d)) {
       todayEvents.push(e);
       continue;
     }
-
-    if (
-      sectionFilter.week &&
-      d.getTime() > now.getTime() &&
-      d.getTime() <= endOfWeek.getTime()
-    ) {
+    if (sectionFilter.week && d.getTime() > now.getTime() && d.getTime() <= endOfWeek.getTime()) {
       weekEvents.push(e);
       continue;
     }
-
     if (sectionFilter.upcoming && d.getTime() > endOfWeek.getTime()) {
       upcomingEvents.push(e);
     }
@@ -158,113 +146,40 @@ export function EventsAdminMainScreen() {
           contentContainerStyle={{
             paddingHorizontal: 16,
             paddingTop: 16,
-            paddingBottom: 8,
+            paddingBottom: 120, // Espacio extra para los botones flotantes
           }}
           scrollIndicatorInsets={{ bottom: tabBarHeight }}
         >
-          {/* Título principal */}
           <Text className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-slate-50">
             Eventos (Admin)
           </Text>
           <View className="mt-2 h-1.5 w-28 rounded-full bg-emerald-500 dark:bg-emerald-400" />
-          <Text className="mt-4 text-base text-slate-600 dark:text-slate-300">
-            Administre los eventos: revise los de hoy, esta semana y los próximos.
-          </Text>
-
-          {/* Filtro de Categoría */}
+          
           <CategoryFilter categoryFilter={categoryFilter} setCategoryFilter={setCategoryFilter} />
-
-          {/* Filtro de búsqueda */}
           <EventsSearchBar value={searchText} onChange={setSearchText} />
-
-          {/* Filtro de secciones (Hoy, Esta semana, Próximos) */}
           <EventsSectionChecklist value={sectionFilter} onChange={setSectionFilter} />
 
-          {/* Mostrar mensaje si no se encuentran eventos */}
           {filteredEventsCount === 0 && (
             <View className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
               <Text className="text-sm text-slate-700 dark:text-slate-200">
-                No se encontraron eventos con los filtros seleccionados.
+                No se encontraron eventos.
               </Text>
             </View>
           )}
 
-          {/* Sección: Hoy */}
-          <View className="mt-8">
-            <View className="mb-4 flex-row items-end justify-between">
-              <View>
-                <Text className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-                  Hoy
-                </Text>
-                <View className="mt-2 h-1 w-28 rounded-full bg-slate-300 dark:bg-slate-600" />
-              </View>
-              <Text className="mb-1 text-xs font-semibold text-slate-500 dark:text-slate-300">
-                {todayEvents.length} evento(s)
-              </Text>
+          {/* Secciones de Eventos */}
+          {[{title: 'Hoy', data: todayEvents}, {title: 'Esta semana', data: weekEvents}, {title: 'Próximos', data: upcomingEvents}].map((section, idx) => (
+            <View key={idx} className="mt-8">
+              <Text className="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-4">{section.title}</Text>
+              {section.data.length === 0 ? (
+                <View className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-dashed border-slate-200">
+                   <Text className="text-slate-400 text-center">Sin eventos</Text>
+                </View>
+              ) : (
+                section.data.map(renderEventCard)
+              )}
             </View>
-
-            {todayEvents.length === 0 ? (
-              <View className="rounded-2xl border border-dashed border-slate-300 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-                <Text className="text-sm text-slate-700 dark:text-slate-200">
-                  No hay eventos programados para hoy.
-                </Text>
-              </View>
-            ) : (
-              <View className="flex-col">{todayEvents.map(renderEventCard)}</View>
-            )}
-          </View>
-
-          {/* Sección: Esta semana */}
-          <View className="mt-10">
-            <View className="mb-4 flex-row items-end justify-between">
-              <View>
-                <Text className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-                  Esta semana
-                </Text>
-                <View className="mt-2 h-1 w-28 rounded-full bg-slate-300 dark:bg-slate-600" />
-              </View>
-              <Text className="mb-1 text-xs font-semibold text-slate-500 dark:text-slate-300">
-                {weekEvents.length} evento(s)
-              </Text>
-            </View>
-
-            {weekEvents.length === 0 ? (
-              <View className="rounded-2xl border border-dashed border-slate-300 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-                <Text className="text-sm text-slate-700 dark:text-slate-200">
-                  No hay eventos programados para esta semana.
-                </Text>
-              </View>
-            ) : (
-              <View className="flex-col">{weekEvents.map(renderEventCard)}</View>
-            )}
-          </View>
-
-          {/* Sección: Eventos próximos */}
-          <View className="mt-10">
-            <View className="mb-4 flex-row items-end justify-between">
-              <View>
-                <Text className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-                  Eventos próximos
-                </Text>
-                <View className="mt-2 h-1 w-28 rounded-full bg-slate-300 dark:bg-slate-600" />
-              </View>
-              <Text className="mb-1 text-xs font-semibold text-slate-500 dark:text-slate-300">
-                {upcomingEvents.length} evento(s)
-              </Text>
-            </View>
-
-            {upcomingEvents.length === 0 ? (
-              <View className="rounded-2xl border border-dashed border-slate-300 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-                <Text className="text-sm text-slate-700 dark:text-slate-200">
-                  No hay eventos próximos por ahora.
-                </Text>
-              </View>
-            ) : (
-              <View className="flex-col">
-                {upcomingEvents.map(renderEventCard)}
-              </View>
-            )}
-          </View>
+          ))}
         </ScrollView>
 
         <EventDetailModal
@@ -273,13 +188,22 @@ export function EventsAdminMainScreen() {
           onClose={handleCloseDetail}
         />
 
-        {/* Botón de nuevo evento/publicación */}
-        <Pressable
+        {/* --- GRUPO DE ACCIONES FLOTANTES --- */}
+        <View className="absolute bottom-6 right-6 items-center">
+          
+          {/* Botón de QR  */}
+          <View className="mb-4 shadow-xl">
+             <QRCodeScannerButton onScannerClose={() => {}} />
+          </View>
+
+          {/* Botón de nuevo evento  */}
+<Pressable
           onPress={() => setCreateModalVisible(true)}
-          className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full bg-emerald-500 shadow-2xl dark:bg-emerald-400"
+          className="absolute bottom-20 right--2 h-14 w-14 items-center justify-center rounded-full bg-emerald-500 shadow-2xl dark:bg-emerald-400"
         >
           <Text className="text-3xl font-bold text-white">+</Text>
         </Pressable>
+        </View>
 
         <AdminCreateEventFormModal
           visible={createModalVisible}
