@@ -19,6 +19,7 @@ import { EventCardWithImage } from '@/features/events/components/EventCardWithIm
 import { EventDetailModal } from '@/features/events/components/EventDetailModal';
 import { EVENTS_SEED } from '@/features/events/components/EventSeed';
 import type { EventStudentItem } from '@/features/events/types/eventTypes';
+import { CategoryFilter } from '../../components/CategoryFilter';
 
 // -----------------------------------------------------------------------------
 // Utilidades de fechas
@@ -64,6 +65,7 @@ export function EventsStudentMainScreen() {
   const [createModalVisible, setCreateModalVisible] = useState(false);
   
     const [searchText, setSearchText] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   
     const eventsBase = useMemo(() => [...EVENTS_SEED], []);
   
@@ -80,31 +82,30 @@ export function EventsStudentMainScreen() {
   const now = new Date();
   const endOfWeek = getEndOfWeek(now);
 
+  const filteredByTags = categoryFilter
+    ? filteredEvents.filter((event) => event.tags && event.tags.includes(categoryFilter))
+    : filteredEvents;
+
+  const filteredEventsCount = filteredByTags.length;
+
   const todayEvents: EventStudentItem[] = [];
   const weekEvents: EventStudentItem[] = [];
   const upcomingEvents: EventStudentItem[] = [];
 
-  for (const e of filteredEvents) {
-  const d = new Date(e.startsAtIso);
-
-  if (sectionFilter.today && isSameLocalDay(now, d)) {
-    todayEvents.push(e);
-    continue;
+  for (const e of filteredByTags) {
+    const d = new Date(e.startsAtIso);
+    if (sectionFilter.today && isSameLocalDay(now, d)) {
+      todayEvents.push(e);
+      continue;
+    }
+    if (sectionFilter.week && d.getTime() > now.getTime() && d.getTime() <= endOfWeek.getTime()) {
+      weekEvents.push(e);
+      continue;
+    }
+    if (sectionFilter.upcoming && d.getTime() > endOfWeek.getTime()) {
+      upcomingEvents.push(e);
+    }
   }
-
-  if (
-    sectionFilter.week &&
-    d.getTime() > now.getTime() &&
-    d.getTime() <= endOfWeek.getTime()
-  ) {
-    weekEvents.push(e);
-    continue;
-  }
-
-  if (sectionFilter.upcoming && d.getTime() > endOfWeek.getTime()) {
-    upcomingEvents.push(e);
-  }
-}
 
   const sortByDate = (a: EventStudentItem, b: EventStudentItem) =>
     new Date(a.startsAtIso).getTime() - new Date(b.startsAtIso).getTime();
@@ -156,6 +157,8 @@ export function EventsStudentMainScreen() {
             Revise los eventos de hoy, de esta semana y los próximos.
           </Text>
 
+          <CategoryFilter categoryFilter={categoryFilter} setCategoryFilter={setCategoryFilter} />
+          
           <EventsSearchBar value={searchText} onChange={setSearchText} />
           <EventsSectionChecklist value={sectionFilter} onChange={setSectionFilter} />
           {searchText.trim().length > 0 &&
