@@ -3,7 +3,7 @@ import { Image, Pressable, SafeAreaView, Text, View } from 'react-native';
 import { HamburgerIcon } from './HamburguerIcon';
 
 //Este componente representa la credencial del usuario administrador
-//Recibe informacion básica del usuario que se muestra en el layout
+//Recibe informacion basica del usuario que se muestra en el layout
 type Props = {
   topTitle?: string;
   subtitle?: string;
@@ -14,6 +14,7 @@ type Props = {
 
   photoUri?: string;
   onOpenMenu?: () => void;
+  isMenuOpen?: boolean;
 
   //Se importan los InfoRow desde la pantalla
   children?: ReactNode;
@@ -21,12 +22,13 @@ type Props = {
 
 export function AdminHeader({
   topTitle = 'Mi Credencial',
-  subtitle = 'Identificación Digital Oficial',
+  subtitle = 'Identificacion Digital Oficial',
   name,
   roleLabel = 'ADMINISTRADOR',
   idLabel = 'ID: ADM-0001',
   photoUri,
   onOpenMenu,
+  isMenuOpen = false,
   children,
 }: Props) {
   return (
@@ -43,9 +45,10 @@ export function AdminHeader({
             <Text className="text-xs text-slate-500">{subtitle}</Text>
           </View>
 
-          {/* Botón hamburguesa  */}
+          {/* Boton hamburguesa  */}
           <Pressable
             onPress={onOpenMenu}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             className="h-10 w-10 items-center justify-center rounded-full bg-white"
             style={{
               elevation: 6,
@@ -55,7 +58,13 @@ export function AdminHeader({
               shadowOffset: { width: 0, height: 3 },
             }}
           >
-            <HamburgerIcon color="#111827" size={18} lineHeight={2.2} gap={3} />
+            <HamburgerIcon
+              color="#111827"
+              size={18}
+              lineHeight={2.2}
+              gap={3}
+              open={isMenuOpen}
+            />
           </Pressable>
         </View>
       </View>
@@ -83,8 +92,8 @@ export function AdminHeader({
             {/* Foto + nombre */}
             <View className="flex-row gap-3">
               <View className="-mt-6">
-                <View className="h-20 w-20 rounded-xl bg-white p-1">
-                  <View className="h-full w-full items-center justify-center overflow-hidden rounded-lg bg-slate-200">
+                <View className="h-20 w-20 rounded-full bg-white p-1">
+                  <View className="h-full w-full items-center justify-center overflow-hidden rounded-full bg-slate-200">
                     {photoUri ? (
                       <Image
                         source={{ uri: photoUri }}
@@ -110,7 +119,7 @@ export function AdminHeader({
               {children}
             </View>
 
-            {/* Verificación */}
+            {/* Verificacion */}
             <View className="mt-3 items-center">
               <Text className="text-[11px] text-slate-400">
                 Documento digital verificado

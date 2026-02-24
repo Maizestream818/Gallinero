@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 
-//Este componente representa el manejo de información sobre el usuario administrador
+//Este componente representa el manejo de informacion sobre el usuario administrador
 type Props = {
   label: string;
   value: string;

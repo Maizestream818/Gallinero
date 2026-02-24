@@ -1,5 +1,6 @@
 // features/user/screens/admin/UserAdminMainScreen.tsx
 import { StatusBar } from 'expo-status-bar';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import React, { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
@@ -9,17 +10,18 @@ import { OptionsMenuModal } from '@/components/ui/OptionsMenuModal';
 
 //Pantalla de informacion del administrador
 export function UserAdminMainScreen() {
-  // Estado para abrir/cerrar menú hamburguesa
+  // Estado para abrir/cerrar menu hamburguesa
   const [menuVisible, setMenuVisible] = useState(false);
+  const tabBarHeight = useBottomTabBarHeight();
 
-  // Información simulada del administrador de momento
+  // Informacion simulada del administrador de momento
   // ASEGURAR DE CAMBIAR AL MOMENTO DE CONECTAR EL BACKEND
   const admin = {
     id: 'ADM-001',
-    nombre: 'Oswaldo Cruz García',
+    nombre: 'Oswaldo Cruz Garcia',
     correo: 'admin@correo.com',
     puesto: 'Coordinador',
-    departamento: 'Difusión y Cultura',
+    departamento: 'Difusion y Cultura',
     sexo: 'Masculino',
     foto: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300',
   };
@@ -31,14 +33,18 @@ export function UserAdminMainScreen() {
       <View className="flex-1 bg-slate-100">
         <StatusBar style="dark" />
 
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: tabBarHeight + 16 }}
+        >
           <AdminHeader
             topTitle="Mi Credencial"
-            subtitle="Identificación Digital Oficial"
+            subtitle="Identificacion Digital Oficial"
             name={admin.nombre}
             roleLabel="ADMINISTRADOR"
             idLabel={`ID: ${admin.id}`}
             photoUri={admin.foto}
+            isMenuOpen={menuVisible}
             onOpenMenu={() => setMenuVisible(true)}
           >
             <InfoRow label="Correo" value={admin.correo} />
@@ -50,13 +56,13 @@ export function UserAdminMainScreen() {
           <View className="h-6" />
         </ScrollView>
 
-        {/* Menú hamburguesa como componente reutilizable */}
+        {/* Menu hamburguesa como componente reutilizable */}
         <OptionsMenuModal
           visible={menuVisible}
           onClose={() => setMenuVisible(false)}
           onLogout={() => {
-            console.log('Cerrar sesión');
-            // OJO: Conectar el logout real después
+            console.log('Cerrar sesion');
+            // OJO: Conectar el logout real despues
           }}
         />
       </View>

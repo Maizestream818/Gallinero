@@ -1,12 +1,13 @@
 import React from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
-//Este componente representa los estilos del menú
+//Este componente representa los estilos del menu
 type Props = {
   visible: boolean;
   onClose: () => void;
   onLogout?: () => void;
   onQR?: () => void;
+  onEditPhoto?: () => void;
   onEdit?: () => void;
   title?: string;
 };
@@ -17,6 +18,7 @@ export function OptionsMenuModal({
   onClose,
   onQR,
   onLogout,
+  onEditPhoto,
   onEdit,
   title = 'OPCIONES',
 }: Props) {
@@ -25,7 +27,7 @@ export function OptionsMenuModal({
       visible={visible}
       transparent
       animationType="fade" //Animacion suave de entrada y salida
-      onRequestClose={onClose} //Necesario para Android ya que es el "Botón atras"
+      onRequestClose={onClose} //Necesario para Android ya que es el "Boton atras"
     >
       <View style={styles.modalRoot}>
         <Pressable style={styles.backdrop} onPress={onClose} />
@@ -36,7 +38,7 @@ export function OptionsMenuModal({
           <View style={styles.divider} />
 
           {/*  BOTON QR  */}
-          {onQR && (
+          {/*{onQR && (
             <Pressable
               style={styles.menuItem}
               onPress={() => {
@@ -44,11 +46,23 @@ export function OptionsMenuModal({
                 onQR();
               }}
             >
-              <Text style={styles.optionText}>Código QR</Text>
+              <Text style={styles.optionText}>Codigo QR</Text>
+            </Pressable>
+          )} */}
+
+          {/*  EDITAR  */}
+          {onEditPhoto && (
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => {
+                onClose();
+                onEditPhoto();
+              }}
+            >
+              <Text style={styles.optionText}>Editar foto de perfil</Text>
             </Pressable>
           )}
 
-          {/*  EDITAR  */}
           {onEdit && (
             <Pressable
               style={styles.menuItem}
@@ -57,11 +71,9 @@ export function OptionsMenuModal({
                 onEdit();
               }}
             >
-              <Text style={styles.optionText}>Editar Información</Text>
+              <Text style={styles.optionText}>Editar Informacion</Text>
             </Pressable>
           )}
-
-          
 
           <Pressable
             style={styles.menuItem}
@@ -70,7 +82,7 @@ export function OptionsMenuModal({
               onLogout?.();
             }}
           >
-            <Text style={styles.logoutText}>Cerrar sesión</Text>
+            <Text style={styles.logoutText}>Cerrar sesion</Text>
           </Pressable>
 
           <Pressable style={styles.menuItem} onPress={onClose}>
@@ -82,7 +94,7 @@ export function OptionsMenuModal({
   );
 }
 
-//Estilos para el menú
+//Estilos para el menu
 const styles = StyleSheet.create({
   modalRoot: {
     flex: 1,
@@ -91,7 +103,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.30)',
   },
-  //Panel flotante del menú
+  //Panel flotante del menu
   menuPanel: {
     position: 'absolute',
     right: 16,
@@ -112,7 +124,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
   },
-  //Estilo del título del menú
+  //Estilo del titulo del menu
   menuTitle: {
     fontSize: 12,
     fontWeight: '700',

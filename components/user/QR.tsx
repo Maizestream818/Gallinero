@@ -13,7 +13,7 @@ export function QR({ visible, onClose, userName, userId }: Props) {
   const [timestamp, setTimestamp] = useState(Date.now());
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (visible) {
       setTimestamp(Date.now());
       interval = setInterval(() => {
@@ -45,10 +45,10 @@ export function QR({ visible, onClose, userName, userId }: Props) {
 
         {/* Contenedor principal */}
         <View className="w-4/5 items-center rounded-2xl bg-white p-6">
-          <Text className="mb-2 text-lg font-bold">Código QR</Text>
+          <Text className="mb-2 text-lg font-bold">Codigo QR</Text>
 
           <Text className="mb-4 text-center text-xs text-gray-500">
-            Escanea este código para registrar tu asistencia
+            Escanea este codigo para registrar tu asistencia
           </Text>
 
           {/* QR */}
@@ -61,11 +61,9 @@ export function QR({ visible, onClose, userName, userId }: Props) {
           </View>
 
           {/* Componente de la barra de progreso */}
-          {visible && (
-            <Barra duration={10000} onTimeout={handleRefresh} />
-          )}
-    
-          {/* Botón */}
+          {visible && <Barra duration={10000} onTimeout={handleRefresh} />}
+
+          {/* Boton */}
           <Pressable
             onPress={onClose}
             className="mt-6 w-full rounded-lg bg-blue-600 py-3"
