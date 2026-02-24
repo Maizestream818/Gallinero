@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Barra } from './Barra';
 
@@ -10,9 +10,11 @@ type Props = {
 };
 
 export function QR({ visible, onClose, userName, userId }: Props) {
-  const [timestamp, setTimestamp] = useState(Date.now());
+  const [timestamp, setTimestamp] = useState(() => Date.now());
 
+  // Al abrir, genera uno nuevo UNA sola vez
   useEffect(() => {
+<<<<<<< HEAD
     let interval: ReturnType<typeof setInterval> | undefined;
     if (visible) {
       setTimestamp(Date.now());
@@ -23,15 +25,26 @@ export function QR({ visible, onClose, userName, userId }: Props) {
     return () => {
       if (interval) clearInterval(interval);
     };
+=======
+    if (visible) setTimestamp(Date.now());
+>>>>>>> 2ba80f9c5625557384cf6a04ffdcb2854a0f10d1
   }, [visible]);
-  const handleRefresh = () => {
-    setTimestamp(Date.now());
-  };
 
-  // Valor que se manda al QR
-  const qrValue = `ALUMNO:${userId}|TIME:${timestamp}`;
-  // API publica para generar el QR
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${qrValue}`;
+  // Función estable (no cambia en cada render)
+  const handleTimeout = useCallback(() => {
+    setTimestamp(Date.now());
+  }, []);
+
+  const qrValue = useMemo(() => {
+    const nonce = Math.random().toString(36).slice(2, 10);
+    return `ALUMNO:${userId ?? ''}|TIME:${timestamp}|NONCE:${nonce}`;
+  }, [userId, timestamp]);
+
+  const qrUrl = useMemo(() => {
+    const data = encodeURIComponent(qrValue);
+    return `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${data}&cb=${timestamp}`;
+  }, [qrValue, timestamp]);
+
   return (
     <Modal
       visible={visible}
@@ -40,30 +53,34 @@ export function QR({ visible, onClose, userName, userId }: Props) {
       onRequestClose={onClose}
     >
       <View style={styles.container}>
-        {/* Fondo oscuro */}
         <Pressable style={styles.backdrop} onPress={onClose} />
 
-        {/* Contenedor principal */}
         <View className="w-4/5 items-center rounded-2xl bg-white p-6">
+<<<<<<< HEAD
           <Text className="mb-2 text-lg font-bold">Codigo QR</Text>
 
+=======
+          <Text className="mb-2 text-lg font-bold">Código QR</Text>
+>>>>>>> 2ba80f9c5625557384cf6a04ffdcb2854a0f10d1
           <Text className="mb-4 text-center text-xs text-gray-500">
             Escanea este codigo para registrar tu asistencia
           </Text>
 
-          {/* QR */}
-          <Image source={{ uri: qrUrl }} style={{ width: 250, height: 250 }} />
+          <Image
+            key={timestamp}
+            source={{ uri: qrUrl }}
+            style={{ width: 250, height: 250 }}
+          />
 
-          {/* Datos */}
-          <View className="mt-4 items-center">
-            <Text className="font-semibold">{userName}</Text>
-            <Text className="text-xs text-gray-400">ID: {userId}</Text>
-          </View>
+          {visible && <Barra duration={10000} onTimeout={handleTimeout} />}
 
+<<<<<<< HEAD
           {/* Componente de la barra de progreso */}
           {visible && <Barra duration={10000} onTimeout={handleRefresh} />}
 
           {/* Boton */}
+=======
+>>>>>>> 2ba80f9c5625557384cf6a04ffdcb2854a0f10d1
           <Pressable
             onPress={onClose}
             className="mt-6 w-full rounded-lg bg-blue-600 py-3"
