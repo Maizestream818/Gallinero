@@ -14,23 +14,19 @@ export function QR({ visible, onClose, userName, userId }: Props) {
 
   // Al abrir, genera uno nuevo UNA sola vez
   useEffect(() => {
-<<<<<<< HEAD
     let interval: ReturnType<typeof setInterval> | undefined;
     if (visible) {
       setTimestamp(Date.now());
       interval = setInterval(() => {
         setTimestamp(Date.now());
-      }, 10000); //10 segundos para que cambie el qr
+      }, 10000); // 10 segundos para que cambie el qr
     }
     return () => {
       if (interval) clearInterval(interval);
     };
-=======
-    if (visible) setTimestamp(Date.now());
->>>>>>> 2ba80f9c5625557384cf6a04ffdcb2854a0f10d1
   }, [visible]);
 
-  // Función estable (no cambia en cada render)
+  // Funcion estable (no cambia en cada render)
   const handleTimeout = useCallback(() => {
     setTimestamp(Date.now());
   }, []);
@@ -56,12 +52,7 @@ export function QR({ visible, onClose, userName, userId }: Props) {
         <Pressable style={styles.backdrop} onPress={onClose} />
 
         <View className="w-4/5 items-center rounded-2xl bg-white p-6">
-<<<<<<< HEAD
           <Text className="mb-2 text-lg font-bold">Codigo QR</Text>
-
-=======
-          <Text className="mb-2 text-lg font-bold">Código QR</Text>
->>>>>>> 2ba80f9c5625557384cf6a04ffdcb2854a0f10d1
           <Text className="mb-4 text-center text-xs text-gray-500">
             Escanea este codigo para registrar tu asistencia
           </Text>
@@ -74,13 +65,6 @@ export function QR({ visible, onClose, userName, userId }: Props) {
 
           {visible && <Barra duration={10000} onTimeout={handleTimeout} />}
 
-<<<<<<< HEAD
-          {/* Componente de la barra de progreso */}
-          {visible && <Barra duration={10000} onTimeout={handleRefresh} />}
-
-          {/* Boton */}
-=======
->>>>>>> 2ba80f9c5625557384cf6a04ffdcb2854a0f10d1
           <Pressable
             onPress={onClose}
             className="mt-6 w-full rounded-lg bg-blue-600 py-3"
