@@ -1,17 +1,23 @@
 // features/user/screens/admin/UserAdminMainScreen.tsx
 import { StatusBar } from 'expo-status-bar';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { InfoRow } from '@/components/admin/InfoRow';
 import { OptionsMenuModal } from '@/components/ui/OptionsMenuModal';
+import type { MenuAnchor } from '@/components/ui/types/menu-anchor';
+import { useAuth } from '@/features/auth/AuthContext';
 
 //Pantalla de informacion del administrador
 export function UserAdminMainScreen() {
+  const router = useRouter();
+  const { setRole } = useAuth();
   // Estado para abrir/cerrar menu hamburguesa
   const [menuVisible, setMenuVisible] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState<MenuAnchor | null>(null);
   const tabBarHeight = useBottomTabBarHeight();
 
   // Informacion simulada del administrador de momento
@@ -45,7 +51,10 @@ export function UserAdminMainScreen() {
             idLabel={`ID: ${admin.id}`}
             photoUri={admin.foto}
             isMenuOpen={menuVisible}
-            onOpenMenu={() => setMenuVisible(true)}
+            onOpenMenu={(anchor) => {
+              setMenuAnchor(anchor);
+              setMenuVisible(true);
+            }}
           >
             <InfoRow label="Correo" value={admin.correo} />
             <InfoRow label="Puesto" value={admin.puesto} />
@@ -59,10 +68,14 @@ export function UserAdminMainScreen() {
         {/* Menu hamburguesa como componente reutilizable */}
         <OptionsMenuModal
           visible={menuVisible}
-          onClose={() => setMenuVisible(false)}
+          anchor={menuAnchor}
+          onClose={() => {
+            setMenuVisible(false);
+            setMenuAnchor(null);
+          }}
           onLogout={() => {
-            console.log('Cerrar sesion');
-            // OJO: Conectar el logout real despues
+            setRole(null);
+            router.replace('/login');
           }}
         />
       </View>

@@ -1,6 +1,7 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useRef } from 'react';
 import { Image, Pressable, SafeAreaView, Text, View } from 'react-native';
 import { HamburgerIcon } from './HamburguerIcon';
+import type { MenuAnchor } from '@/components/ui/types/menu-anchor';
 
 //Este componente representa la credencial del usuario administrador
 //Recibe informacion basica del usuario que se muestra en el layout
@@ -13,7 +14,7 @@ type Props = {
   idLabel?: string;
 
   photoUri?: string;
-  onOpenMenu?: () => void;
+  onOpenMenu?: (anchor: MenuAnchor) => void;
   isMenuOpen?: boolean;
 
   //Se importan los InfoRow desde la pantalla
@@ -31,6 +32,18 @@ export function AdminHeader({
   isMenuOpen = false,
   children,
 }: Props) {
+  const menuButtonRef = useRef<View>(null);
+
+  const handleOpenMenu = () => {
+    if (!onOpenMenu) {
+      return;
+    }
+
+    menuButtonRef.current?.measureInWindow((x, y, width, height) => {
+      onOpenMenu({ x, y, width, height });
+    });
+  };
+
   return (
     //SafeAreaView evita que el contenido se empalme con la barra de estado
     <SafeAreaView className="bg-slate-120">
@@ -46,26 +59,28 @@ export function AdminHeader({
           </View>
 
           {/* Boton hamburguesa  */}
-          <Pressable
-            onPress={onOpenMenu}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            className="h-10 w-10 items-center justify-center rounded-full bg-white"
-            style={{
-              elevation: 6,
-              shadowColor: '#000',
-              shadowOpacity: 0.15,
-              shadowRadius: 8,
-              shadowOffset: { width: 0, height: 3 },
-            }}
-          >
-            <HamburgerIcon
-              color="#111827"
-              size={18}
-              lineHeight={2.2}
-              gap={3}
-              open={isMenuOpen}
-            />
-          </Pressable>
+          <View ref={menuButtonRef} collapsable={false}>
+            <Pressable
+              onPress={handleOpenMenu}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              className="h-10 w-10 items-center justify-center rounded-full bg-white"
+              style={{
+                elevation: 6,
+                shadowColor: '#000',
+                shadowOpacity: 0.15,
+                shadowRadius: 8,
+                shadowOffset: { width: 0, height: 3 },
+              }}
+            >
+              <HamburgerIcon
+                color="#111827"
+                size={18}
+                lineHeight={2.2}
+                gap={3}
+                open={isMenuOpen}
+              />
+            </Pressable>
+          </View>
         </View>
       </View>
 

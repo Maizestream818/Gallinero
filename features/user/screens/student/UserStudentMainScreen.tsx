@@ -1,15 +1,18 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { InfoRow } from '@/components/admin/InfoRow';
 import { OptionsMenuModal } from '@/components/ui/OptionsMenuModal';
+import type { MenuAnchor } from '@/components/ui/types/menu-anchor';
 import { ProfilePhotoCropperModal } from '@/components/user/ProfilePhotoCropperModal';
 import { QR } from '@/components/user/QR';
 import { UserEditProfileModal } from '@/components/user/UserEditProfileModal';
+import { useAuth } from '@/features/auth/AuthContext';
 import {
   loadUserProfile,
   saveProfilePhotoToAppStorage,
@@ -36,7 +39,10 @@ type CropSource = {
 };
 
 export function UserStudentMainScreen() {
+  const router = useRouter();
+  const { setRole } = useAuth();
   const [menuVisible, setMenuVisible] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState<MenuAnchor | null>(null);
   const [qrVisible, setQrVisible] = useState(false);
   const [editVisible, setEditVisible] = useState(false);
   const [photoCropVisible, setPhotoCropVisible] = useState(false);
@@ -143,6 +149,11 @@ export function UserStudentMainScreen() {
     }
   };
 
+  const handleLogout = () => {
+    setRole(null);
+    router.replace('/login');
+  };
+
   return (
     <View className="items flex-1 bg-slate-900">
       <StatusBar style="light" />
@@ -162,7 +173,10 @@ export function UserStudentMainScreen() {
             idLabel={`ID: ${user.id}`}
             photoUri={user.foto}
             isMenuOpen={menuVisible}
-            onOpenMenu={() => setMenuVisible(true)}
+            onOpenMenu={(anchor) => {
+              setMenuAnchor(anchor);
+              setMenuVisible(true);
+            }}
           >
             <InfoRow label="Correo" value={user.correo} />
             <InfoRow label="Carrera" value={user.carrera} />
@@ -179,7 +193,11 @@ export function UserStudentMainScreen() {
 
         <OptionsMenuModal
           visible={menuVisible}
-          onClose={() => setMenuVisible(false)}
+          anchor={menuAnchor}
+          onClose={() => {
+            setMenuVisible(false);
+            setMenuAnchor(null);
+          }}
           onEditPhoto={() => {
             setTimeout(() => {
               void handleOpenPhotoPicker();
@@ -194,7 +212,7 @@ export function UserStudentMainScreen() {
             setTimeout(() => setEditVisible(true), 300);
           }}
           onLogout={() => {
-            console.log('Cerrar sesion');
+            handleLogout();
           }}
         />
 

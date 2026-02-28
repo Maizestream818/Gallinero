@@ -1,9 +1,19 @@
 import React from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { MenuAnchor } from '@/components/ui/types/menu-anchor';
 
 //Este componente representa los estilos del menu
 type Props = {
   visible: boolean;
+  anchor?: MenuAnchor | null;
   onClose: () => void;
   onLogout?: () => void;
   onQR?: () => void;
@@ -15,6 +25,7 @@ type Props = {
 //Se renderiza usando un Modal para aparecer sobre toda la pantalla
 export function OptionsMenuModal({
   visible,
+  anchor = null,
   onClose,
   onQR,
   onLogout,
@@ -22,6 +33,45 @@ export function OptionsMenuModal({
   onEdit,
   title = 'OPCIONES',
 }: Props) {
+  const insets = useSafeAreaInsets();
+  const { width: viewportWidth, height: viewportHeight } =
+    useWindowDimensions();
+  const [panelHeight, setPanelHeight] = React.useState(260);
+
+  const horizontalMargin = 12;
+  const verticalMargin = 8;
+  const maxPanelWidth = 240;
+
+  const clamp = (value: number, min: number, max: number) =>
+    Math.min(Math.max(value, min), max);
+
+  const panelWidth = Math.min(
+    maxPanelWidth,
+    Math.max(120, viewportWidth - horizontalMargin * 2),
+  );
+
+  const hasValidAnchor = !!anchor && anchor.width > 0 && anchor.height > 0;
+
+  const minLeft = horizontalMargin;
+  const maxLeft = Math.max(
+    minLeft,
+    viewportWidth - panelWidth - horizontalMargin,
+  );
+  const desiredLeft = hasValidAnchor
+    ? anchor.x + anchor.width - panelWidth
+    : viewportWidth - panelWidth - 12;
+  const left = clamp(desiredLeft, minLeft, maxLeft);
+
+  const minTop = insets.top + verticalMargin;
+  const maxTop = Math.max(
+    minTop,
+    viewportHeight - insets.bottom - panelHeight - verticalMargin,
+  );
+  const desiredTop = hasValidAnchor
+    ? anchor.y + anchor.height + 8
+    : insets.top + 12;
+  const top = clamp(desiredTop, minTop, maxTop);
+
   return (
     <Modal
       visible={visible}
@@ -32,7 +82,15 @@ export function OptionsMenuModal({
       <View style={styles.modalRoot}>
         <Pressable style={styles.backdrop} onPress={onClose} />
 
-        <View style={styles.menuPanel}>
+        <View
+          style={[styles.menuPanel, { top, left, width: panelWidth }]}
+          onLayout={(event) => {
+            const nextHeight = event.nativeEvent.layout.height;
+            if (nextHeight !== panelHeight) {
+              setPanelHeight(nextHeight);
+            }
+          }}
+        >
           <Text style={styles.menuTitle}>{title}</Text>
 
           <View style={styles.divider} />
@@ -106,9 +164,6 @@ const styles = StyleSheet.create({
   //Panel flotante del menu
   menuPanel: {
     position: 'absolute',
-    right: 16,
-    top: 70,
-    width: 240,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 12,
