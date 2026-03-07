@@ -10,11 +10,13 @@ import { InfoRow } from '@/components/admin/InfoRow';
 import { OptionsMenuModal } from '@/components/ui/OptionsMenuModal';
 import type { MenuAnchor } from '@/components/ui/types/menu-anchor';
 import { useAuth } from '@/features/auth/AuthContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 //Pantalla de informacion del administrador
 export function UserAdminMainScreen() {
   const router = useRouter();
   const { setRole } = useAuth();
+  const isDark = useColorScheme() === 'dark';
   // Estado para abrir/cerrar menu hamburguesa
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<MenuAnchor | null>(null);
@@ -33,12 +35,16 @@ export function UserAdminMainScreen() {
   };
 
   return (
-    <View className="items flex-1 bg-slate-900">
-      <StatusBar style="light" />
+    <View
+      className="items flex-1 bg-slate-900"
+      style={{ backgroundColor: isDark ? '#0f172a' : '#f1f5f9' }}
+    >
+      <StatusBar style={isDark ? 'light' : 'dark'} />
 
-      <View className="flex-1 bg-slate-100">
-        <StatusBar style="dark" />
-
+      <View
+        className="flex-1 bg-slate-100"
+        style={{ backgroundColor: isDark ? '#111827' : '#f1f5f9' }}
+      >
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: tabBarHeight + 16 }}

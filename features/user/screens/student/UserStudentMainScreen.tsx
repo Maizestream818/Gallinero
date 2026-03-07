@@ -13,6 +13,7 @@ import { ProfilePhotoCropperModal } from '@/components/user/ProfilePhotoCropperM
 import { QR } from '@/components/user/QR';
 import { UserEditProfileModal } from '@/components/user/UserEditProfileModal';
 import { useAuth } from '@/features/auth/AuthContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import {
   loadUserProfile,
   saveProfilePhotoToAppStorage,
@@ -41,6 +42,7 @@ type CropSource = {
 export function UserStudentMainScreen() {
   const router = useRouter();
   const { setRole } = useAuth();
+  const isDark = useColorScheme() === 'dark';
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<MenuAnchor | null>(null);
   const [qrVisible, setQrVisible] = useState(false);
@@ -155,12 +157,16 @@ export function UserStudentMainScreen() {
   };
 
   return (
-    <View className="items flex-1 bg-slate-900">
-      <StatusBar style="light" />
+    <View
+      className="items flex-1 bg-slate-900"
+      style={{ backgroundColor: isDark ? '#0f172a' : '#f1f5f9' }}
+    >
+      <StatusBar style={isDark ? 'light' : 'dark'} />
 
-      <View className="flex-1 bg-slate-100">
-        <StatusBar style="dark" />
-
+      <View
+        className="flex-1 bg-slate-100"
+        style={{ backgroundColor: isDark ? '#111827' : '#f1f5f9' }}
+      >
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: tabBarHeight + 16 }}
