@@ -1,14 +1,25 @@
+import type { MenuAnchor } from '@/components/ui/types/menu-anchor';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-//Este componente representa los estilos del menú
+//Este componente representa los estilos del menu
 type Props = {
   visible: boolean;
+  anchor?: MenuAnchor | null;
   onClose: () => void;
   onLogout?: () => void;
   onQR?: () => void;
+  onEditPhoto?: () => void;
   onEdit?: () => void;
   title?: string;
 };
@@ -16,8 +27,10 @@ type Props = {
 //Se renderiza usando un Modal para aparecer sobre toda la pantalla
 export function OptionsMenuModal({
   visible,
+  anchor = null,
   onClose,
   onQR,
+  onEditPhoto,
   onEdit,
   title = 'OPCIONES',
 }: Props) {
@@ -29,23 +42,70 @@ export function OptionsMenuModal({
     router.replace('/login');
   };
 
+  const insets = useSafeAreaInsets();
+  const { width: viewportWidth, height: viewportHeight } =
+    useWindowDimensions();
+  const [panelHeight, setPanelHeight] = React.useState(260);
+
+  const horizontalMargin = 12;
+  const verticalMargin = 8;
+  const maxPanelWidth = 240;
+
+  const clamp = (value: number, min: number, max: number) =>
+    Math.min(Math.max(value, min), max);
+
+  const panelWidth = Math.min(
+    maxPanelWidth,
+    Math.max(120, viewportWidth - horizontalMargin * 2),
+  );
+
+  const hasValidAnchor = !!anchor && anchor.width > 0 && anchor.height > 0;
+
+  const minLeft = horizontalMargin;
+  const maxLeft = Math.max(
+    minLeft,
+    viewportWidth - panelWidth - horizontalMargin,
+  );
+  const desiredLeft = hasValidAnchor
+    ? anchor.x + anchor.width - panelWidth
+    : viewportWidth - panelWidth - 12;
+  const left = clamp(desiredLeft, minLeft, maxLeft);
+
+  const minTop = insets.top + verticalMargin;
+  const maxTop = Math.max(
+    minTop,
+    viewportHeight - insets.bottom - panelHeight - verticalMargin,
+  );
+  const desiredTop = hasValidAnchor
+    ? anchor.y + anchor.height + 8
+    : insets.top + 12;
+  const top = clamp(desiredTop, minTop, maxTop);
+
   return (
     <Modal
       visible={visible}
       transparent
       animationType="fade" //Animacion suave de entrada y salida
-      onRequestClose={onClose} //Necesario para Android ya que es el "Botón atras"
+      onRequestClose={onClose} //Necesario para Android ya que es el "Boton atras"
     >
       <View style={styles.modalRoot}>
         <Pressable style={styles.backdrop} onPress={onClose} />
 
-        <View style={styles.menuPanel}>
+        <View
+          style={[styles.menuPanel, { top, left, width: panelWidth }]}
+          onLayout={(event) => {
+            const nextHeight = event.nativeEvent.layout.height;
+            if (nextHeight !== panelHeight) {
+              setPanelHeight(nextHeight);
+            }
+          }}
+        >
           <Text style={styles.menuTitle}>{title}</Text>
 
           <View style={styles.divider} />
 
           {/*  BOTON QR  */}
-          {onQR && (
+          {/*{onQR && (
             <Pressable
               style={styles.menuItem}
               onPress={() => {
@@ -53,11 +113,23 @@ export function OptionsMenuModal({
                 onQR();
               }}
             >
-              <Text style={styles.optionText}>Código QR</Text>
+              <Text style={styles.optionText}>Codigo QR</Text>
+            </Pressable>
+          )} */}
+
+          {/*  EDITAR  */}
+          {onEditPhoto && (
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => {
+                onClose();
+                onEditPhoto();
+              }}
+            >
+              <Text style={styles.optionText}>Editar foto de perfil</Text>
             </Pressable>
           )}
 
-          {/*  EDITAR  */}
           {onEdit && (
             <Pressable
               style={styles.menuItem}
@@ -66,7 +138,7 @@ export function OptionsMenuModal({
                 onEdit();
               }}
             >
-              <Text style={styles.optionText}>Editar Información</Text>
+              <Text style={styles.optionText}>Editar Informacion</Text>
             </Pressable>
           )}
 
@@ -77,7 +149,7 @@ export function OptionsMenuModal({
               handleLogout();
             }}
           >
-            <Text style={styles.logoutText}>Cerrar sesión</Text>
+            <Text style={styles.logoutText}>Cerrar sesion</Text>
           </Pressable>
 
           <Pressable style={styles.menuItem} onPress={onClose}>
@@ -89,7 +161,7 @@ export function OptionsMenuModal({
   );
 }
 
-//Estilos para el menú
+//Estilos para el menu
 const styles = StyleSheet.create({
   modalRoot: {
     flex: 1,
@@ -98,12 +170,9 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.30)',
   },
-  //Panel flotante del menú
+  //Panel flotante del menu
   menuPanel: {
     position: 'absolute',
-    right: 16,
-    top: 70,
-    width: 240,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 12,
@@ -119,7 +188,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
   },
-  //Estilo del título del menú
+  //Estilo del titulo del menu
   menuTitle: {
     fontSize: 12,
     fontWeight: '700',

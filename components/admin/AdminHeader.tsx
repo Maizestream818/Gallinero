@@ -1,9 +1,10 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useRef } from 'react';
 import { Image, Pressable, SafeAreaView, Text, View } from 'react-native';
 import { HamburgerIcon } from './HamburguerIcon';
+import type { MenuAnchor } from '@/components/ui/types/menu-anchor';
 
 //Este componente representa la credencial del usuario administrador
-//Recibe informacion básica del usuario que se muestra en el layout
+//Recibe informacion basica del usuario que se muestra en el layout
 type Props = {
   topTitle?: string;
   subtitle?: string;
@@ -13,7 +14,8 @@ type Props = {
   idLabel?: string;
 
   photoUri?: string;
-  onOpenMenu?: () => void;
+  onOpenMenu?: (anchor: MenuAnchor) => void;
+  isMenuOpen?: boolean;
 
   //Se importan los InfoRow desde la pantalla
   children?: ReactNode;
@@ -21,14 +23,27 @@ type Props = {
 
 export function AdminHeader({
   topTitle = 'Mi Credencial',
-  subtitle = 'Identificación Digital Oficial',
+  subtitle = 'Identificacion Digital Oficial',
   name,
   roleLabel = 'ADMINISTRADOR',
   idLabel = 'ID: ADM-0001',
   photoUri,
   onOpenMenu,
+  isMenuOpen = false,
   children,
 }: Props) {
+  const menuButtonRef = useRef<View>(null);
+
+  const handleOpenMenu = () => {
+    if (!onOpenMenu) {
+      return;
+    }
+
+    menuButtonRef.current?.measureInWindow((x, y, width, height) => {
+      onOpenMenu({ x, y, width, height });
+    });
+  };
+
   return (
     //SafeAreaView evita que el contenido se empalme con la barra de estado
     <SafeAreaView className="bg-slate-120">
@@ -43,20 +58,29 @@ export function AdminHeader({
             <Text className="text-xs text-slate-500">{subtitle}</Text>
           </View>
 
-          {/* Botón hamburguesa  */}
-          <Pressable
-            onPress={onOpenMenu}
-            className="h-10 w-10 items-center justify-center rounded-full bg-white"
-            style={{
-              elevation: 6,
-              shadowColor: '#000',
-              shadowOpacity: 0.15,
-              shadowRadius: 8,
-              shadowOffset: { width: 0, height: 3 },
-            }}
-          >
-            <HamburgerIcon color="#111827" size={18} lineHeight={2.2} gap={3} />
-          </Pressable>
+          {/* Boton hamburguesa  */}
+          <View ref={menuButtonRef} collapsable={false}>
+            <Pressable
+              onPress={handleOpenMenu}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              className="h-10 w-10 items-center justify-center rounded-full bg-white"
+              style={{
+                elevation: 6,
+                shadowColor: '#000',
+                shadowOpacity: 0.15,
+                shadowRadius: 8,
+                shadowOffset: { width: 0, height: 3 },
+              }}
+            >
+              <HamburgerIcon
+                color="#111827"
+                size={18}
+                lineHeight={2.2}
+                gap={3}
+                open={isMenuOpen}
+              />
+            </Pressable>
+          </View>
         </View>
       </View>
 
@@ -83,8 +107,8 @@ export function AdminHeader({
             {/* Foto + nombre */}
             <View className="flex-row gap-3">
               <View className="-mt-6">
-                <View className="h-20 w-20 rounded-xl bg-white p-1">
-                  <View className="h-full w-full items-center justify-center overflow-hidden rounded-lg bg-slate-200">
+                <View className="h-20 w-20 rounded-full bg-white p-1">
+                  <View className="h-full w-full items-center justify-center overflow-hidden rounded-full bg-slate-200">
                     {photoUri ? (
                       <Image
                         source={{ uri: photoUri }}
@@ -110,7 +134,7 @@ export function AdminHeader({
               {children}
             </View>
 
-            {/* Verificación */}
+            {/* Verificacion */}
             <View className="mt-3 items-center">
               <Text className="text-[11px] text-slate-400">
                 Documento digital verificado
