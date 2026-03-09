@@ -3,7 +3,7 @@ tomando en cuenta las estandarizaciones que se manejan en la vista administrador
 y usuario normal para cada evento.
 De momento deshabilitado hasta encontrar una forma de guardarlo localmente o tener 
 una base de datos funcional.*/
-import React from 'react';
+import React, { useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 type Props = {
@@ -11,12 +11,35 @@ type Props = {
   onClose: () => void;
 };
 
+// Lista de categorías o etiquetas disponibles
+const categories = [
+  'Cinema Universidad',
+  'Ballet Folclorico Universidad',
+  'Farandula Universitaria',
+  'Helikón',
+  'Talentos Universitarios',
+  'Galerías y Exposiciones',
+  'Museo Nacional de la Muerte',
+  'Servicio Social',
+];
+
 export function AdminCreateEventFormModal({ visible, onClose }: Props) {
+  // Estado para los tags seleccionados
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  // Función para agregar o eliminar tags
+  const handleTagToggle = (tag: string) => {
+    setSelectedTags((prevTags) =>
+      prevTags.includes(tag)
+        ? prevTags.filter((item) => item !== tag) // Eliminar tag si ya está seleccionado
+        : [...prevTags, tag] // Agregar tag si no está seleccionado
+    );
+  };
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View className="flex-1 items-center justify-center bg-slate-900/60">
         <Pressable onPress={onClose} className="absolute inset-0" />
-
         <View className="w-[94%] max-h-[85%] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-800">
           <ScrollView contentContainerClassName="p-5">
             <View className="flex-row items-center justify-between">
@@ -98,15 +121,27 @@ export function AdminCreateEventFormModal({ visible, onClose }: Props) {
               Etiquetas
             </Text>
             <View className="mt-3 flex-row flex-wrap gap-2">
-              {['Proyecto', 'Taller', 'Asesoría', 'Cultural'].map((tag) => (
-                <View
+              {categories.map((tag) => (
+                <Pressable
                   key={tag}
-                  className="rounded-full bg-slate-100 px-3 py-1 opacity-60 dark:bg-slate-700"
+                  onPress={() => handleTagToggle(tag)} // Seleccionar o deseleccionar el tag
+                  style={{
+                    backgroundColor: selectedTags.includes(tag) ? '#4CAF50' : '#f0f0f0', // Fondo verde si seleccionado
+                    paddingVertical: 8,
+                    paddingHorizontal: 16,
+                    borderRadius: 20,
+                    marginBottom: 8,
+                  }}
                 >
-                  <Text className="text-[11px] font-semibold text-slate-700 dark:text-slate-100">
+                  <Text
+                    style={{
+                      color: selectedTags.includes(tag) ? 'white' : '#333', // Texto blanco si seleccionado
+                      fontSize: 14,
+                    }}
+                  >
                     {tag}
                   </Text>
-                </View>
+                </Pressable>
               ))}
             </View>
 

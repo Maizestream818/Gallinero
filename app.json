@@ -45,7 +45,8 @@
           "photosPermission": "Permite a Gallinero acceder a tu galeria para elegir foto de perfil."
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-barcode-scanner"
     ],
     "experiments": {
       "typedRoutes": true,
