@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Modal,
+  Pressable,
   ScrollView,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 import type { UserProfile } from '@/features/user/types/user-profile';
 
@@ -26,6 +28,27 @@ export function UserEditProfileModal({
 }: Props) {
   const [formData, setFormData] = useState<UserProfile>(user);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Tema del sistema para aplicar colores al modal
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const palette = Colors[colorScheme ?? 'light'];
+
+  // Colores del modal según el tema del sistema
+  const colors = {
+    overlay: 'rgba(0,0,0,0.5)',
+    sheetBg: isDark ? '#1e293b' : '#ffffff',
+    title: palette.text,
+    cancelText: '#ef4444',
+    label: palette.icon,
+    inputBg: isDark ? '#0f172a' : '#f1f5f9',
+    inputBorder: isDark ? '#334155' : '#e2e8f0',
+    inputText: palette.text,
+    inputPlaceholder: isDark ? '#475569' : '#94a3b8',
+    saveBtnBg: '#2563eb',
+    saveBtnText: '#ffffff',
+    saveBtnDisabled: isDark ? '#1e3a5f' : '#93c5fd',
+  };
 
   useEffect(() => {
     setFormData(user);
@@ -46,6 +69,43 @@ export function UserEditProfileModal({
     }
   };
 
+  // Campo de texto reutilizable con estilos del tema
+  const Field = ({
+    label,
+    value,
+    onChange,
+    keyboardType,
+    flex,
+  }: {
+    label: string;
+    value: string;
+    onChange: (text: string) => void;
+    keyboardType?: 'default' | 'email-address';
+    flex?: number;
+  }) => (
+    <View style={{ flex, marginBottom: 12 }}>
+      <Text style={{ color: colors.label, fontSize: 12, fontWeight: '600', marginBottom: 6 }}>
+        {label}
+      </Text>
+      <TextInput
+        style={{
+          borderRadius: 10,
+          backgroundColor: colors.inputBg,
+          borderWidth: 1,
+          borderColor: colors.inputBorder,
+          color: colors.inputText,
+          paddingHorizontal: 12,
+          paddingVertical: 10,
+          fontSize: 15,
+        }}
+        value={value}
+        onChangeText={onChange}
+        keyboardType={keyboardType ?? 'default'}
+        placeholderTextColor={colors.inputPlaceholder}
+      />
+    </View>
+  );
+
   return (
     <Modal
       visible={visible}
@@ -53,99 +113,87 @@ export function UserEditProfileModal({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View className="flex-1 justify-end bg-black/50">
-        <View className="h-[80%] rounded-t-2xl bg-white p-5">
-          <View className="mb-4 flex-row items-center justify-between">
-            <Text className="text-lg font-bold">Editar datos</Text>
-            <TouchableOpacity onPress={onClose}>
-              <Text className="text-red-500">Cancelar</Text>
-            </TouchableOpacity>
+      <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: colors.overlay }}>
+        {/* Hoja inferior que respeta el tema del sistema */}
+        <View
+          style={{
+            height: '80%',
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            backgroundColor: colors.sheetBg,
+            padding: 20,
+          }}
+        >
+          {/* Encabezado */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.title }}>
+              Editar datos
+            </Text>
+            <Pressable onPress={onClose}>
+              <Text style={{ color: colors.cancelText, fontWeight: '600' }}>Cancelar</Text>
+            </Pressable>
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false}>
-            <View className="mb-3">
-              <Text>Nombre</Text>
-              <TextInput
-                className="rounded-lg bg-slate-100 p-3"
-                value={formData.nombre}
-                onChangeText={(text) =>
-                  setFormData((previous) => ({ ...previous, nombre: text }))
-                }
+            <Field
+              label="Nombre"
+              value={formData.nombre}
+              onChange={(text) => setFormData((p) => ({ ...p, nombre: text }))}
+            />
+
+            <Field
+              label="Correo"
+              value={formData.correo}
+              onChange={(text) => setFormData((p) => ({ ...p, correo: text }))}
+              keyboardType="email-address"
+            />
+
+            <Field
+              label="Carrera"
+              value={formData.carrera}
+              onChange={(text) => setFormData((p) => ({ ...p, carrera: text }))}
+            />
+
+            {/* Grado y Grupo en la misma fila */}
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <Field
+                label="Grado"
+                value={formData.grado}
+                onChange={(text) => setFormData((p) => ({ ...p, grado: text }))}
+                flex={1}
+              />
+              <Field
+                label="Grupo"
+                value={formData.grupo}
+                onChange={(text) => setFormData((p) => ({ ...p, grupo: text }))}
+                flex={1}
               />
             </View>
 
-            <View className="mb-3">
-              <Text>Correo</Text>
-              <TextInput
-                className="rounded-lg bg-slate-100 p-3"
-                value={formData.correo}
-                keyboardType="email-address"
-                onChangeText={(text) =>
-                  setFormData((previous) => ({ ...previous, correo: text }))
-                }
-              />
-            </View>
+            <Field
+              label="Nivel academico"
+              value={formData.nivel_academico}
+              onChange={(text) => setFormData((p) => ({ ...p, nivel_academico: text }))}
+            />
 
-            <View className="mb-3">
-              <Text>Carrera</Text>
-              <TextInput
-                className="rounded-lg bg-slate-100 p-3"
-                value={formData.carrera}
-                onChangeText={(text) =>
-                  setFormData((previous) => ({ ...previous, carrera: text }))
-                }
-              />
-            </View>
-
-            <View className="mb-3 flex-row gap-3">
-              <View className="flex-1">
-                <Text>Grado</Text>
-                <TextInput
-                  className="rounded-lg bg-slate-100 p-3"
-                  value={formData.grado}
-                  onChangeText={(text) =>
-                    setFormData((previous) => ({ ...previous, grado: text }))
-                  }
-                />
-              </View>
-
-              <View className="flex-1">
-                <Text>Grupo</Text>
-                <TextInput
-                  className="rounded-lg bg-slate-100 p-3"
-                  value={formData.grupo}
-                  onChangeText={(text) =>
-                    setFormData((previous) => ({ ...previous, grupo: text }))
-                  }
-                />
-              </View>
-            </View>
-
-            <View className="mb-5">
-              <Text>Nivel academico</Text>
-              <TextInput
-                className="rounded-lg bg-slate-100 p-3"
-                value={formData.nivel_academico}
-                onChangeText={(text) =>
-                  setFormData((previous) => ({
-                    ...previous,
-                    nivel_academico: text,
-                  }))
-                }
-              />
-            </View>
-
-            <TouchableOpacity
-              className="items-center rounded-lg bg-blue-600 p-3"
+            {/* Botón guardar */}
+            <Pressable
               disabled={isSaving}
               onPress={handleSave}
+              style={{
+                alignItems: 'center',
+                borderRadius: 10,
+                paddingVertical: 12,
+                backgroundColor: isSaving ? colors.saveBtnDisabled : colors.saveBtnBg,
+                marginTop: 4,
+              }}
             >
-              <Text className="font-bold text-white">
+              <Text style={{ fontWeight: 'bold', color: colors.saveBtnText }}>
                 {isSaving ? 'Guardando...' : 'Guardar'}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
 
-            <View className="h-6" />
+            <View style={{ height: 24 }} />
           </ScrollView>
         </View>
       </View>

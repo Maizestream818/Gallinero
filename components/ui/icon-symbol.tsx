@@ -18,6 +18,8 @@ type IconSymbolName = keyof typeof MAPPING;
  */
 //Se agregaron dos iconos más para el manejo del menú inferior que es indispensable para la navegación
 //Se agregó el icono person.3.fill groups y person.crop.circle.fill person, los cuales fueron para comunidad y perfil
+//Se agregó qrcode para el botón QR del menú inferior
+//Se agregó pencil para el botón de editar foto de perfil
 const MAPPING = {
   'house.fill': 'home',
   'paperplane.fill': 'send',
@@ -25,6 +27,8 @@ const MAPPING = {
   'chevron.right': 'chevron-right',
   'person.3.fill': 'groups', 
   'person.crop.circle.fill': 'person',
+  'qrcode': 'qr-code',
+  'pencil': 'edit',
 } as IconMapping;
 
 /**

@@ -10,7 +10,7 @@ import { InfoRow } from '@/components/admin/InfoRow';
 import { OptionsMenuModal } from '@/components/ui/OptionsMenuModal';
 import type { MenuAnchor } from '@/components/ui/types/menu-anchor';
 import { ProfilePhotoCropperModal } from '@/components/user/ProfilePhotoCropperModal';
-import { QR } from '@/components/user/QR';
+import { QR } from '@/components/ui/QR';
 import { UserEditProfileModal } from '@/components/user/UserEditProfileModal';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -157,16 +157,14 @@ export function UserStudentMainScreen() {
   };
 
   return (
+    // Contenedor raiz — usa el color de fondo del tema del sistema
     <View
-      className="items flex-1 bg-slate-900"
-      style={{ backgroundColor: isDark ? '#0f172a' : '#f1f5f9' }}
+      style={{ flex: 1, backgroundColor: isDark ? '#0f172a' : '#f1f5f9' }}
     >
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
-      <View
-        className="flex-1 bg-slate-100"
-        style={{ backgroundColor: isDark ? '#111827' : '#f1f5f9' }}
-      >
+      {/* Contenedor interior que hereda el fondo del tema */}
+      <View style={{ flex: 1, backgroundColor: isDark ? '#0f172a' : '#f1f5f9' }}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: tabBarHeight + 16 }}
@@ -179,6 +177,8 @@ export function UserStudentMainScreen() {
             idLabel={`ID: ${user.id}`}
             photoUri={user.foto}
             isMenuOpen={menuVisible}
+            // El lápiz de editar foto va directo al header — se pasa aquí
+            onEditPhoto={() => void handleOpenPhotoPicker()}
             onOpenMenu={(anchor) => {
               setMenuAnchor(anchor);
               setMenuVisible(true);
@@ -203,11 +203,6 @@ export function UserStudentMainScreen() {
           onClose={() => {
             setMenuVisible(false);
             setMenuAnchor(null);
-          }}
-          onEditPhoto={() => {
-            setTimeout(() => {
-              void handleOpenPhotoPicker();
-            }, 300);
           }}
           onQR={() => {
             setMenuVisible(false);

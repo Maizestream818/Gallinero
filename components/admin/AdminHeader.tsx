@@ -1,7 +1,10 @@
 import React, { ReactNode, useRef } from 'react';
 import { Image, Pressable, SafeAreaView, Text, View } from 'react-native';
 import { HamburgerIcon } from './HamburguerIcon';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import type { MenuAnchor } from '@/components/ui/types/menu-anchor';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 //Este componente representa la credencial del usuario administrador
 //Recibe informacion basica del usuario que se muestra en el layout
@@ -16,6 +19,8 @@ type Props = {
   photoUri?: string;
   onOpenMenu?: (anchor: MenuAnchor) => void;
   isMenuOpen?: boolean;
+  // Callback opcional para editar la foto — muestra el lápiz si se provee
+  onEditPhoto?: () => void;
 
   //Se importan los InfoRow desde la pantalla
   children?: ReactNode;
@@ -30,9 +35,14 @@ export function AdminHeader({
   photoUri,
   onOpenMenu,
   isMenuOpen = false,
+  onEditPhoto,
   children,
 }: Props) {
   const menuButtonRef = useRef<View>(null);
+  // Detecta el tema del sistema (dark/light) para aplicar colores correctamente
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const palette = Colors[colorScheme ?? 'light'];
 
   const handleOpenMenu = () => {
     if (!onOpenMenu) {
@@ -44,18 +54,46 @@ export function AdminHeader({
     });
   };
 
+  // Se usa un azul de acento fijo (#2563eb) para la banda en light.
+  // En dark mode la banda usa el fondo secundario oscuro para no romper la paleta.
+  const ACCENT = '#2563eb';
+  const colors = {
+    safeArea: palette.background,
+    headerBg: isDark ? '#1e293b' : '#ffffff',
+    headerTitle: isDark ? '#f1f5f9' : '#0f172a',
+    headerSubtitle: isDark ? '#94a3b8' : '#64748b',
+    menuBtnBg: isDark ? '#334155' : '#ffffff',
+    menuBtnIcon: palette.icon,
+    cardBg: isDark ? '#1e293b' : '#ffffff',
+    cardBorder: isDark ? '#334155' : 'transparent',
+    photoBg: isDark ? '#334155' : '#e2e8f0',
+    photoRing: isDark ? '#1e293b' : '#ffffff',
+    userName: palette.text,
+    userId: palette.icon,
+    infoBoxBg: isDark ? '#0f172a' : '#f8fafc',
+    infoBoxBorder: isDark ? '#334155' : '#e2e8f0',
+    verifyText: isDark ? '#475569' : '#94a3b8',
+    // Banda del rol: azul en light, fondo oscuro secundario en dark
+    roleBandBg: isDark ? '#0f172a' : ACCENT,
+    roleBandText: isDark ? '#94a3b8' : '#ffffff',
+    // Botón lápiz: azul en light, fondo secundario en dark con ícono del tema
+    pencilBg: isDark ? '#334155' : ACCENT,
+    pencilIcon: isDark ? palette.text : '#ffffff',
+    pencilBorder: palette.background,
+  };
+
   return (
     //SafeAreaView evita que el contenido se empalme con la barra de estado
-    <SafeAreaView className="bg-slate-120">
-      {/* Header blanco superior */}
-      <View className="px-4 pt-5 pb-3"></View>
-      <View className="bg-white px-4 pt-3 pb-3">
+    <SafeAreaView style={{ backgroundColor: colors.safeArea }}>
+      {/* Header superior — barra con título "Mi Credencial" */}
+      <View style={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 12 }} />
+      <View style={{ backgroundColor: colors.headerBg, paddingHorizontal: 16, paddingVertical: 12 }}>
         <View className="flex-row items-center justify-between">
           <View>
-            <Text className="text-base font-bold text-slate-900">
+            <Text style={{ color: colors.headerTitle, fontSize: 15, fontWeight: 'bold' }}>
               {topTitle}
             </Text>
-            <Text className="text-xs text-slate-500">{subtitle}</Text>
+            <Text style={{ color: colors.headerSubtitle, fontSize: 12 }}>{subtitle}</Text>
           </View>
 
           {/* Boton hamburguesa  */}
@@ -63,17 +101,22 @@ export function AdminHeader({
             <Pressable
               onPress={handleOpenMenu}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              className="h-10 w-10 items-center justify-center rounded-full bg-white"
               style={{
+                height: 40,
+                width: 40,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 20,
+                backgroundColor: colors.menuBtnBg,
                 elevation: 6,
                 shadowColor: '#000',
-                shadowOpacity: 0.15,
+                shadowOpacity: isDark ? 0.4 : 0.15,
                 shadowRadius: 8,
                 shadowOffset: { width: 0, height: 3 },
               }}
             >
               <HamburgerIcon
-                color="#111827"
+                color={colors.menuBtnIcon}
                 size={18}
                 lineHeight={2.2}
                 gap={3}
@@ -85,30 +128,52 @@ export function AdminHeader({
       </View>
 
       {/* Tarjeta credencial */}
-      <View className="px-4 pt-4">
+      <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
         <View
-          className="overflow-hidden rounded-2xl bg-white"
           style={{
+            overflow: 'hidden',
+            borderRadius: 16,
+            backgroundColor: colors.cardBg,
+            borderWidth: isDark ? 1 : 0,
+            borderColor: colors.cardBorder,
             elevation: 6,
             shadowColor: '#000',
-            shadowOpacity: 0.12,
+            shadowOpacity: isDark ? 0.4 : 0.12,
             shadowRadius: 10,
             shadowOffset: { width: 0, height: 4 },
           }}
         >
-          {/* Banda azul */}
-          <View className="items-center bg-blue-600 px-4 py-4">
-            <Text className="text-xs font-bold tracking-widest text-white">
+          {/* Banda de color — azul de acento siempre legible en dark y light */}
+          <View style={{ alignItems: 'center', backgroundColor: colors.roleBandBg, paddingHorizontal: 16, paddingVertical: 16 }}>
+            <Text style={{ fontSize: 12, fontWeight: 'bold', letterSpacing: 2, color: colors.roleBandText }}>
               {roleLabel}
             </Text>
           </View>
 
-          <View className="px-4 pb-4">
-            {/* Foto + nombre */}
+          <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+            {/* Foto + nombre + botón lápiz */}
             <View className="flex-row gap-3">
-              <View className="-mt-6">
-                <View className="h-20 w-20 rounded-full bg-white p-1">
-                  <View className="h-full w-full items-center justify-center overflow-hidden rounded-full bg-slate-200">
+              {/* Foto con botón lápiz al estilo Facebook */}
+              <View style={{ marginTop: -24, overflow: 'visible' }}>
+                <View
+                  style={{
+                    height: 80,
+                    width: 80,
+                    borderRadius: 40,
+                    backgroundColor: colors.photoRing,
+                    padding: 4,
+                  }}
+                >
+                  <View
+                    style={{
+                      flex: 1,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden',
+                      borderRadius: 40,
+                      backgroundColor: colors.photoBg,
+                    }}
+                  >
                     {photoUri ? (
                       <Image
                         source={{ uri: photoUri }}
@@ -119,24 +184,61 @@ export function AdminHeader({
                     )}
                   </View>
                 </View>
+
+                {/* Botón lápiz — solo se muestra si se provee onEditPhoto */}
+                {onEditPhoto && (
+                  <Pressable
+                    onPress={onEditPhoto}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      right: 0,
+                      width: 26,
+                      height: 26,
+                      borderRadius: 13,
+                      backgroundColor: colors.pencilBg,
+                      borderWidth: 2,
+                      borderColor: colors.pencilBorder,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      elevation: 4,
+                      shadowColor: '#000',
+                      shadowOpacity: 0.2,
+                      shadowRadius: 4,
+                      shadowOffset: { width: 0, height: 2 },
+                    }}
+                  >
+                    <IconSymbol name="pencil" size={13} color={colors.pencilIcon} />
+                  </Pressable>
+                )}
               </View>
 
               <View className="flex-1 pt-2">
-                <Text className="text-base font-bold text-slate-900">
+                <Text style={{ color: colors.userName, fontSize: 15, fontWeight: 'bold' }}>
                   {name}
                 </Text>
-                <Text className="mt-1 text-xs text-slate-500">{idLabel}</Text>
+                <Text style={{ color: colors.userId, fontSize: 12, marginTop: 4 }}>{idLabel}</Text>
               </View>
             </View>
 
             {/*Caja  donde van los InfoRow */}
-            <View className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+            <View
+              style={{
+                marginTop: 16,
+                overflow: 'hidden',
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: colors.infoBoxBorder,
+                backgroundColor: colors.infoBoxBg,
+              }}
+            >
               {children}
             </View>
 
             {/* Verificacion */}
             <View className="mt-3 items-center">
-              <Text className="text-[11px] text-slate-400">
+              <Text style={{ color: colors.verifyText, fontSize: 11 }}>
                 Documento digital verificado
               </Text>
             </View>

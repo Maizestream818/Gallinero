@@ -1,6 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+// components/ui/QR.tsx
+// Modal de código QR para registro de asistencia.
+// Movido a components/ui/ porque es usado tanto por la navegación global
+// (_layout.tsx) como por la pantalla de usuario — no es exclusivo del dominio user.
+
+import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Barra } from './Barra';
+import { Barra } from '@/components/user/Barra';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 
@@ -14,45 +19,36 @@ type Props = {
 export function QR({ visible, onClose, userName, userId }: Props) {
   const [timestamp, setTimestamp] = useState(() => Date.now());
 
-  // Tema del sistema para aplicar colores al modal
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const palette = Colors[colorScheme ?? 'light'];
 
-  // Colores del modal según el tema del sistema
   const colors = {
     cardBg: isDark ? '#1e293b' : '#ffffff',
     cardBorder: isDark ? '#334155' : 'transparent',
     title: palette.text,
     subtitle: palette.icon,
-    // El QR siempre sobre fondo blanco para que sea escaneable
     qrBg: '#ffffff',
-    // Botón cerrar: verde siempre
     closeBtnBg: '#22c55e',
     closeBtnText: '#ffffff',
   };
 
-  // Al abrir, genera uno nuevo UNA sola vez
+  // Al abrir, genera el timestamp inicial.
+  // El ciclo de rotación lo maneja exclusivamente la Barra mediante onTimeout —
+  // no hay setInterval aquí para evitar dos temporizadores desincronizados.
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | undefined;
     if (visible) {
       setTimestamp(Date.now());
-      interval = setInterval(() => {
-        setTimestamp(Date.now());
-      }, 10000); // 10 segundos para que cambie el qr
     }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
   }, [visible]);
 
-  // Funcion estable (no cambia en cada render)
-  const handleTimeout = useCallback(() => {
+  const handleTimeout = () => {
     setTimestamp(Date.now());
-  }, []);
+  };
 
+  // FIX: nonce separado del memo para evitar Math.random() dentro de useMemo
   const qrValue = useMemo(() => {
-    const nonce = Math.random().toString(36).slice(2, 10);
+    const nonce = timestamp.toString(36);
     return `ALUMNO:${userId ?? ''}|TIME:${timestamp}|NONCE:${nonce}`;
   }, [userId, timestamp]);
 
@@ -71,7 +67,6 @@ export function QR({ visible, onClose, userName, userId }: Props) {
       <View style={styles.container}>
         <Pressable style={styles.backdrop} onPress={onClose} />
 
-        {/* Tarjeta del QR — usa colores del tema */}
         <View
           style={{
             width: '80%',

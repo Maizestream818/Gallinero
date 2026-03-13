@@ -1,71 +1,35 @@
 // features/events/screens/admin/EventsAdminMainScreen.tsx
-// Pantalla principal de eventos para administrador (Admin).
-// - Lista eventos en secciones "Hoy", "Esta semana" y "Eventos próximos".
-// - Usa EventCardWithImage / EventCardNoImage.
-// - Las cards se muestran en un grid de 1 columna.
-// - Al tocar una card, abre el EventDetailModal (splash) con el detalle del evento.
-// NOTA IMPORTANTE: Por ahora reutiliza EVENTS_SEED y el tipo EventStudentItem (mock). En backend se ajustará a modelo Admin.
 
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
 import React, { useMemo, useState } from 'react';
-import { ScrollView, Text, View, Pressable } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Componentes
 import { AdminCreateEventFormModal } from '../../components/AdminCreateEventFormModal';
+import { CategoryFilter } from '../../components/CategoryFilter';
 import { EventsSectionChecklist } from '../../components/EventsSectionChecklist';
-import { EventsSearchBar } from '@/features/events/components/EventsSearchBar';
-import { useEventSearch } from '@/hooks/useEventSearch';
+import { QRCodeScannerButton } from '../../components/QRCodeScannerButton';
+import { ScannedStudentModal } from '../../components/ScannedStudentModal';
 import { EventCardNoImage } from '@/features/events/components/EventCardNoImage';
 import { EventCardWithImage } from '@/features/events/components/EventCardWithImage';
 import { EventDetailModal } from '@/features/events/components/EventDetailModal';
-import { CategoryFilter } from '../../components/CategoryFilter';
-import { QRCodeScannerButton } from '../../components/QRCodeScannerButton';
-
-// Datos y Tipos
-import { EVENTS_SEED } from '@/features/events/components/EventSeed';
+import { EventsSearchBar } from '@/features/events/components/EventsSearchBar';
+import { EVENTS_SEED } from '@/features/events/data/EventSeed';
+import { useEventFilters } from '@/features/events/hooks/useEventFilters';
 import type { EventStudentItem } from '@/features/events/types/eventTypes';
-
-// -----------------------------------------------------------------------------
-// Utilidades de fechas
-// -----------------------------------------------------------------------------
-
-function isSameLocalDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
-function getStartOfWeek(date: Date): Date {
-  const d = new Date(date);
-  const day = d.getDay(); 
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function getEndOfWeek(date: Date): Date {
-  const start = getStartOfWeek(date);
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
-  end.setHours(23, 59, 59, 999);
-  return end;
-}
-
-// -----------------------------------------------------------------------------
-// Screen principal (Admin) - USANDO EXPORT DEFAULT PARA EXPO ROUTER
-// -----------------------------------------------------------------------------
+import type { UserProfile } from '@/features/user/types/user-profile';
 
 export default function EventsAdminMainScreen() {
   const tabBarHeight = useBottomTabBarHeight();
 
-  // Estados
+  // ── Estado: detalle de evento ──
   const [selectedEvent, setSelectedEvent] = useState<EventStudentItem | null>(null);
+
+  // ── Estado: crear evento ──
   const [createModalVisible, setCreateModalVisible] = useState(false);
+
+  // ── Estado: filtros ──
   const [searchText, setSearchText] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [sectionFilter, setSectionFilter] = useState({
@@ -74,67 +38,52 @@ export default function EventsAdminMainScreen() {
     upcoming: true,
   });
 
-  // Lógica de filtrado
-  const eventsBase = useMemo(() => [...EVENTS_SEED], []);
-  const { filtered: filteredEvents } = useEventSearch({
-    events: eventsBase,
-    query: searchText,
-  });
+  // ── Estado: resultado de escaneo ──
+  const [scannedStudent, setScannedStudent] = useState<UserProfile | null>(null);
+  const [scanNotFound, setScanNotFound] = useState(false);
 
-  const now = new Date();
-  const endOfWeek = getEndOfWeek(now);
+  // ── Datos ──
+  const eventsBase = useMemo(() => {
+    if (!categoryFilter) return [...EVENTS_SEED];
+    return EVENTS_SEED.filter((e) => e.tags?.includes(categoryFilter));
+  }, [categoryFilter]);
 
-  const filteredByTags = categoryFilter
-    ? filteredEvents.filter((event) => event.tags && event.tags.includes(categoryFilter))
-    : filteredEvents;
+  const { today: todayEvents, week: weekEvents, upcoming: upcomingEvents, totalFiltered } =
+    useEventFilters({ events: eventsBase, query: searchText, sections: sectionFilter });
 
-  const filteredEventsCount = filteredByTags.length;
-
-  const todayEvents: EventStudentItem[] = [];
-  const weekEvents: EventStudentItem[] = [];
-  const upcomingEvents: EventStudentItem[] = [];
-
-  for (const e of filteredByTags) {
-    const d = new Date(e.startsAtIso);
-    if (sectionFilter.today && isSameLocalDay(now, d)) {
-      todayEvents.push(e);
-      continue;
-    }
-    if (sectionFilter.week && d.getTime() > now.getTime() && d.getTime() <= endOfWeek.getTime()) {
-      weekEvents.push(e);
-      continue;
-    }
-    if (sectionFilter.upcoming && d.getTime() > endOfWeek.getTime()) {
-      upcomingEvents.push(e);
+  // ── Handlers ──
+  function handleStudentScanned(result: { found: true; student: UserProfile } | { found: false }) {
+    if (result.found) {
+      setScannedStudent(result.student);
+      setScanNotFound(false);
+    } else {
+      setScannedStudent(null);
+      setScanNotFound(true);
     }
   }
 
-  const sortByDate = (a: EventStudentItem, b: EventStudentItem) =>
-    new Date(a.startsAtIso).getTime() - new Date(b.startsAtIso).getTime();
-
-  todayEvents.sort(sortByDate);
-  weekEvents.sort(sortByDate);
-  upcomingEvents.sort(sortByDate);
-
-  function handleOpenEvent(event: EventStudentItem) {
-    setSelectedEvent(event);
-  }
-
-  function handleCloseDetail() {
-    setSelectedEvent(null);
+  function handleCloseScannedModal() {
+    setScannedStudent(null);
+    setScanNotFound(false);
   }
 
   function renderEventCard(event: EventStudentItem) {
     return (
       <View key={event.id} className="mb-3 w-full">
         {event.imageUrl ? (
-          <EventCardWithImage event={event} onPress={handleOpenEvent} />
+          <EventCardWithImage event={event} onPress={setSelectedEvent} />
         ) : (
-          <EventCardNoImage event={event} onPress={handleOpenEvent} />
+          <EventCardNoImage event={event} onPress={setSelectedEvent} />
         )}
       </View>
     );
   }
+
+  const sections = [
+    { title: 'Hoy', data: todayEvents },
+    { title: 'Esta semana', data: weekEvents },
+    { title: 'Próximos', data: upcomingEvents },
+  ];
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
@@ -146,20 +95,20 @@ export default function EventsAdminMainScreen() {
           contentContainerStyle={{
             paddingHorizontal: 16,
             paddingTop: 16,
-            paddingBottom: 120, // Espacio extra para los botones flotantes
+            paddingBottom: 120,
           }}
           scrollIndicatorInsets={{ bottom: tabBarHeight }}
         >
           <Text className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-slate-50">
-            Eventos (Admin)
+            Eventos
           </Text>
           <View className="mt-2 h-1.5 w-28 rounded-full bg-emerald-500 dark:bg-emerald-400" />
-          
+
           <CategoryFilter categoryFilter={categoryFilter} setCategoryFilter={setCategoryFilter} />
           <EventsSearchBar value={searchText} onChange={setSearchText} />
           <EventsSectionChecklist value={sectionFilter} onChange={setSectionFilter} />
 
-          {filteredEventsCount === 0 && (
+          {totalFiltered === 0 && (
             <View className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
               <Text className="text-sm text-slate-700 dark:text-slate-200">
                 No se encontraron eventos.
@@ -167,48 +116,57 @@ export default function EventsAdminMainScreen() {
             </View>
           )}
 
-          {/* Secciones de Eventos */}
-          {[{title: 'Hoy', data: todayEvents}, {title: 'Esta semana', data: weekEvents}, {title: 'Próximos', data: upcomingEvents}].map((section, idx) => (
-            <View key={idx} className="mt-8">
-              <Text className="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-4">{section.title}</Text>
-              {section.data.length === 0 ? (
-                <View className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-dashed border-slate-200">
-                   <Text className="text-slate-400 text-center">Sin eventos</Text>
+          {sections.map((s) => (
+            <View key={s.title} className="mt-8">
+              <Text className="mb-4 text-2xl font-bold text-slate-900 dark:text-slate-50">
+                {s.title}
+              </Text>
+              {s.data.length === 0 ? (
+                <View className="rounded-xl border border-dashed border-slate-200 bg-white p-4 dark:bg-slate-800">
+                  <Text className="text-center text-slate-400">Sin eventos</Text>
                 </View>
               ) : (
-                section.data.map(renderEventCard)
+                s.data.map(renderEventCard)
               )}
             </View>
           ))}
         </ScrollView>
 
+        {/* ── Modales ── */}
         <EventDetailModal
           visible={!!selectedEvent}
           event={selectedEvent}
-          onClose={handleCloseDetail}
+          onClose={() => setSelectedEvent(null)}
         />
-
-        {/* --- GRUPO DE ACCIONES FLOTANTES --- */}
-        <View className="absolute bottom-6 right-6 items-center">
-          
-          {/* Botón de QR  */}
-          <View className="mb-4 shadow-xl">
-             <QRCodeScannerButton onScannerClose={() => {}} />
-          </View>
-
-          {/* Botón de nuevo evento  */}
-<Pressable
-          onPress={() => setCreateModalVisible(true)}
-          className="absolute bottom-20 right--2 h-14 w-14 items-center justify-center rounded-full bg-emerald-500 shadow-2xl dark:bg-emerald-400"
-        >
-          <Text className="text-3xl font-bold text-white">+</Text>
-        </Pressable>
-        </View>
 
         <AdminCreateEventFormModal
           visible={createModalVisible}
           onClose={() => setCreateModalVisible(false)}
         />
+
+        {/* Modal resultado de escaneo — se abre tanto si encontró alumno como si no */}
+        <ScannedStudentModal
+          visible={!!scannedStudent || scanNotFound}
+          student={scannedStudent}
+          notFound={scanNotFound}
+          onClose={handleCloseScannedModal}
+        />
+
+        {/* ── Botones flotantes ── */}
+        <View
+          style={{ position: 'absolute', bottom: 24, right: 24, alignItems: 'center', gap: 12 }}
+        >
+          {/* Botón crear evento */}
+          <Pressable
+            onPress={() => setCreateModalVisible(true)}
+            className="h-14 w-14 items-center justify-center rounded-full bg-blue-500 shadow-xl dark:bg-blue-400"
+          >
+            <Text className="text-3xl font-bold text-white">+</Text>
+          </Pressable>
+
+          {/* Botón escanear QR — notifica resultado hacia arriba */}
+          <QRCodeScannerButton onStudentScanned={handleStudentScanned} />
+        </View>
       </View>
     </SafeAreaView>
   );

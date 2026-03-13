@@ -1,38 +1,33 @@
-/*Componente que maneja el diseño del formulario para una nueva publicación/evento 
-tomando en cuenta las estandarizaciones que se manejan en la vista administradora
-y usuario normal para cada evento.
-De momento deshabilitado hasta encontrar una forma de guardarlo localmente o tener 
-una base de datos funcional.*/
+// features/events/components/AdminCreateEventFormModal.tsx
+// Formulario para crear un nuevo evento (pendiente de conectar a backend).
+
 import React, { useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
+import { EVENT_CATEGORIES } from '@/features/events/data/categories';
 
 type Props = {
   visible: boolean;
   onClose: () => void;
 };
 
-// Lista de categorías o etiquetas disponibles
-const categories = [
-  'Cinema Universidad',
-  'Ballet Folclorico Universidad',
-  'Farandula Universitaria',
-  'Helikón',
-  'Talentos Universitarios',
-  'Galerías y Exposiciones',
-  'Museo Nacional de la Muerte',
-  'Servicio Social',
-];
-
 export function AdminCreateEventFormModal({ visible, onClose }: Props) {
-  // Estado para los tags seleccionados
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const palette = Colors[colorScheme ?? 'light'];
 
-  // Función para agregar o eliminar tags
+  const tagColors = {
+    default: isDark ? '#334155' : '#e2e8f0',
+    defaultText: isDark ? '#f1f5f9' : '#334155',
+    selected: '#4CAF50',
+    selectedText: '#ffffff',
+  };
+
   const handleTagToggle = (tag: string) => {
-    setSelectedTags((prevTags) =>
-      prevTags.includes(tag)
-        ? prevTags.filter((item) => item !== tag) // Eliminar tag si ya está seleccionado
-        : [...prevTags, tag] // Agregar tag si no está seleccionado
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
     );
   };
 
@@ -46,7 +41,6 @@ export function AdminCreateEventFormModal({ visible, onClose }: Props) {
               <Text className="text-xl font-extrabold text-slate-900 dark:text-slate-50">
                 Crear publicación
               </Text>
-
               <Pressable
                 onPress={onClose}
                 className="rounded-full border border-slate-200 bg-white px-3 py-1 dark:border-slate-700 dark:bg-slate-900"
@@ -116,17 +110,19 @@ export function AdminCreateEventFormModal({ visible, onClose }: Props) {
               className="mt-2 min-h-[96px] rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50"
             />
 
-            {/* Etiquetas */}
+            {/* Etiquetas — usa la lista centralizada */}
             <Text className="mt-5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
               Etiquetas
             </Text>
             <View className="mt-3 flex-row flex-wrap gap-2">
-              {categories.map((tag) => (
+              {EVENT_CATEGORIES.map((tag) => (
                 <Pressable
                   key={tag}
-                  onPress={() => handleTagToggle(tag)} // Seleccionar o deseleccionar el tag
+                  onPress={() => handleTagToggle(tag)}
                   style={{
-                    backgroundColor: selectedTags.includes(tag) ? '#4CAF50' : '#f0f0f0', // Fondo verde si seleccionado
+                    backgroundColor: selectedTags.includes(tag)
+                      ? tagColors.selected
+                      : tagColors.default,
                     paddingVertical: 8,
                     paddingHorizontal: 16,
                     borderRadius: 20,
@@ -135,7 +131,9 @@ export function AdminCreateEventFormModal({ visible, onClose }: Props) {
                 >
                   <Text
                     style={{
-                      color: selectedTags.includes(tag) ? 'white' : '#333', // Texto blanco si seleccionado
+                      color: selectedTags.includes(tag)
+                        ? tagColors.selectedText
+                        : tagColors.defaultText,
                       fontSize: 14,
                     }}
                   >
@@ -151,10 +149,6 @@ export function AdminCreateEventFormModal({ visible, onClose }: Props) {
                 Publicar (pendiente)
               </Text>
             </View>
-
-            <Text className="mt-4 text-xs text-slate-500 dark:text-slate-300">
-              
-            </Text>
           </ScrollView>
         </View>
       </View>

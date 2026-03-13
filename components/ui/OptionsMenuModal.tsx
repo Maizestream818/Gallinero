@@ -1,5 +1,7 @@
 import type { MenuAnchor } from '@/components/ui/types/menu-anchor';
 import { useAuth } from '@/features/auth/AuthContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
@@ -19,7 +21,6 @@ type Props = {
   onClose: () => void;
   onLogout?: () => void;
   onQR?: () => void;
-  onEditPhoto?: () => void;
   onEdit?: () => void;
   title?: string;
 };
@@ -30,12 +31,15 @@ export function OptionsMenuModal({
   anchor = null,
   onClose,
   onQR,
-  onEditPhoto,
   onEdit,
   title = 'OPCIONES',
 }: Props) {
   const router = useRouter();
   const { logout } = useAuth();
+  // Tema del sistema para aplicar colores al panel del menú
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const palette = Colors[colorScheme ?? 'light'];
 
   const handleLogout = () => {
     logout();
@@ -81,6 +85,13 @@ export function OptionsMenuModal({
     : insets.top + 12;
   const top = clamp(desiredTop, minTop, maxTop);
 
+  // Colores del panel según el tema del sistema
+  const panelBg = isDark ? '#1e293b' : '#ffffff';
+  const panelBorder = isDark ? '#334155' : '#E2E8F0';
+  const titleColor = palette.icon;
+  const dividerColor = isDark ? '#334155' : '#E2E8F0';
+  const optionColor = palette.text;
+
   return (
     <Modal
       visible={visible}
@@ -92,7 +103,10 @@ export function OptionsMenuModal({
         <Pressable style={styles.backdrop} onPress={onClose} />
 
         <View
-          style={[styles.menuPanel, { top, left, width: panelWidth }]}
+          style={[
+            styles.menuPanel,
+            { top, left, width: panelWidth, backgroundColor: panelBg, borderColor: panelBorder },
+          ]}
           onLayout={(event) => {
             const nextHeight = event.nativeEvent.layout.height;
             if (nextHeight !== panelHeight) {
@@ -100,9 +114,9 @@ export function OptionsMenuModal({
             }
           }}
         >
-          <Text style={styles.menuTitle}>{title}</Text>
+          <Text style={[styles.menuTitle, { color: titleColor }]}>{title}</Text>
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: dividerColor }]} />
 
           {/*  BOTON QR  */}
           {/*{onQR && (
@@ -113,23 +127,11 @@ export function OptionsMenuModal({
                 onQR();
               }}
             >
-              <Text style={styles.optionText}>Codigo QR</Text>
+              <Text style={[styles.optionText, { color: optionColor }]}>Codigo QR</Text>
             </Pressable>
           )} */}
 
-          {/*  EDITAR  */}
-          {onEditPhoto && (
-            <Pressable
-              style={styles.menuItem}
-              onPress={() => {
-                onClose();
-                onEditPhoto();
-              }}
-            >
-              <Text style={styles.optionText}>Editar foto de perfil</Text>
-            </Pressable>
-          )}
-
+          {/*  EDITAR INFORMACION  */}
           {onEdit && (
             <Pressable
               style={styles.menuItem}
@@ -138,7 +140,7 @@ export function OptionsMenuModal({
                 onEdit();
               }}
             >
-              <Text style={styles.optionText}>Editar Informacion</Text>
+              <Text style={[styles.optionText, { color: optionColor }]}>Editar Informacion</Text>
             </Pressable>
           )}
 
@@ -150,10 +152,6 @@ export function OptionsMenuModal({
             }}
           >
             <Text style={styles.logoutText}>Cerrar sesion</Text>
-          </Pressable>
-
-          <Pressable style={styles.menuItem} onPress={onClose}>
-            <Text style={styles.cancelText}>Cancelar</Text>
           </Pressable>
         </View>
       </View>
@@ -173,11 +171,9 @@ const styles = StyleSheet.create({
   //Panel flotante del menu
   menuPanel: {
     position: 'absolute',
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
 
     // Android
     elevation: 12,
@@ -192,7 +188,6 @@ const styles = StyleSheet.create({
   menuTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#64748B',
     paddingHorizontal: 8,
     paddingVertical: 6,
     letterSpacing: 1,
@@ -200,7 +195,6 @@ const styles = StyleSheet.create({
   //Separador visual
   divider: {
     height: 1,
-    backgroundColor: '#E2E8F0',
     marginVertical: 6,
   },
   menuItem: {
@@ -213,12 +207,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   optionText: {
-    color: '#1E293B',
-    fontWeight: '600',
-  },
-
-  cancelText: {
-    color: '#334155',
     fontWeight: '600',
   },
 });
