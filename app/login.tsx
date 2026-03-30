@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { Alert, Pressable, Text, TextInput, View } from 'react-native';
+
 import { useAuth } from '@/features/auth/AuthContext';
 
 export default function LoginScreen() {
@@ -24,11 +25,11 @@ export default function LoginScreen() {
 
     // Mensaje solo para probar
     Alert.alert(
-      'Sesión iniciada',
-      `Has iniciado sesión como: ${newRole.toUpperCase()}`,
+      'Sesion iniciada',
+      `Has iniciado sesion como: ${newRole.toUpperCase()}`,
     );
 
-    // Luego te manda a las pestañas
+    // Luego te manda a las pestanas
     router.replace('/(tabs)');
   };
 
@@ -36,9 +37,9 @@ export default function LoginScreen() {
     <View className="flex-1 justify-center bg-slate-900 px-6">
       <StatusBar style="light" />
 
-      <Text className="mb-2 text-3xl font-bold text-white">Iniciar sesión</Text>
+      <Text className="mb-2 text-3xl font-bold text-white">Iniciar sesion</Text>
       <Text className="mb-6 text-xs text-slate-400">
-        Pantalla de inicio que se muestra antes de las pestañas.
+        Pantalla de inicio que se muestra antes de las pestanas.
       </Text>
 
       <View className="gap-3">
@@ -56,10 +57,10 @@ export default function LoginScreen() {
         </View>
 
         <View>
-          <Text className="mb-1 text-xs text-slate-300">Contraseña</Text>
+          <Text className="mb-1 text-xs text-slate-300">Contrasena</Text>
           <TextInput
             className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white"
-            placeholder="••••••••"
+            placeholder="********"
             placeholderTextColor="#64748b"
             secureTextEntry
             value={password}
