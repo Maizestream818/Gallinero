@@ -1,4 +1,5 @@
 import { View } from 'react-native';
-export function EventsStudentMainScreen() {
-  return <View />;
+
+export default function EventsAdminMainScreen() {
+  return <View style={{ flex: 1, backgroundColor: 'transparent' }} />;
 }

@@ -15,7 +15,7 @@ import '../global.css';
 
 export const unstable_settings = {
   // anchor: '(tabs)',
-  initialRouteName: '(tabs)',
+  initialRouteName: 'login',
 };
 
 export default function RootLayout() {
