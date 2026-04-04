@@ -159,15 +159,15 @@ export function EventCardNoImage({ event, onPress }: EventCardNoImageProps) {
     return { rowsToRender: null, overflowCount: total };
   }, [sortedTags, rowWidth, chipWidths, plusChipWidthWorstCase]);
 
-    return (
+  return (
     <Pressable
       onPress={() => onPress(event)}
-      className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
+      className="overflow-hidden rounded-[24px] border border-[#D6E2FF] bg-white dark:border-[#20345F] dark:bg-[#05070B]"
     >
-      <View className="p-4">
+      <View className="bg-[#F8FAFF] p-4 dark:bg-[#05070B]">
         {/* Nombre: si excede 2 líneas, aparece "...". */}
         <Text
-          className="text-base font-semibold text-slate-900 dark:text-slate-50"
+          className="text-base font-extrabold uppercase tracking-[0.3px] text-[#4F7DF0] dark:text-[#4F7DF0]"
           numberOfLines={2}
           ellipsizeMode="tail"
         >
@@ -190,9 +190,9 @@ export function EventCardNoImage({ event, onPress }: EventCardNoImageProps) {
                         item.type === 'plus' ? `plus-${item.label}` : item.id;
                       return (
                         <View key={key} className={idx === 0 ? '' : 'ml-2'}>
-                          <View className="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-700">
+                          <View className="rounded-full border border-[#D6E2FF] bg-[#EEF4FF] px-3 py-1 dark:border-[#2D4785] dark:bg-[#0D1730]">
                             <Text
-                              className="text-[11px] font-semibold text-slate-700 dark:text-slate-100"
+                              className="text-[11px] font-bold text-[#4F7DF0] dark:text-[#F5D94E]"
                               numberOfLines={1}
                               ellipsizeMode="tail"
                             >
@@ -213,9 +213,9 @@ export function EventCardNoImage({ event, onPress }: EventCardNoImageProps) {
                         item.type === 'plus' ? `plus-${item.label}` : item.id;
                       return (
                         <View key={key} className={idx === 0 ? '' : 'ml-2'}>
-                          <View className="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-700">
+                          <View className="rounded-full border border-[#D6E2FF] bg-[#EEF4FF] px-3 py-1 dark:border-[#2D4785] dark:bg-[#0D1730]">
                             <Text
-                              className="text-[11px] font-semibold text-slate-700 dark:text-slate-100"
+                              className="text-[11px] font-bold text-[#4F7DF0] dark:text-[#F5D94E]"
                               numberOfLines={1}
                               ellipsizeMode="tail"
                             >
@@ -248,9 +248,9 @@ export function EventCardNoImage({ event, onPress }: EventCardNoImageProps) {
                       });
                     }}
                   >
-                    <View className="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-700">
+                    <View className="rounded-full border border-[#D6E2FF] bg-[#EEF4FF] px-3 py-1 dark:border-[#2D4785] dark:bg-[#0D1730]">
                       <Text
-                        className="text-[11px] font-semibold text-slate-700 dark:text-slate-100"
+                        className="text-[11px] font-bold text-[#4F7DF0] dark:text-[#F5D94E]"
                         numberOfLines={1}
                       >
                         {t.label}
@@ -265,9 +265,9 @@ export function EventCardNoImage({ event, onPress }: EventCardNoImageProps) {
                     setPlusChipWidthWorstCase(e.nativeEvent.layout.width)
                   }
                 >
-                  <View className="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-700">
+                  <View className="rounded-full border border-[#D6E2FF] bg-[#EEF4FF] px-3 py-1 dark:border-[#2D4785] dark:bg-[#0D1730]">
                     <Text
-                      className="text-[11px] font-semibold text-slate-700 dark:text-slate-100"
+                      className="text-[11px] font-bold text-[#4F7DF0] dark:text-[#F5D94E]"
                       numberOfLines={1}
                     >
                       +{sortedTags.length}
@@ -283,5 +283,4 @@ export function EventCardNoImage({ event, onPress }: EventCardNoImageProps) {
       </View>
     </Pressable>
   );
-
 }
