@@ -25,10 +25,12 @@ const MAPPING = {
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
-  'person.3.fill': 'groups', 
+  'person.3.fill': 'groups',
   'person.crop.circle.fill': 'person',
-  'qrcode': 'qr-code',
-  'pencil': 'edit',
+  qrcode: 'qr-code',
+  pencil: 'edit',
+  magnifyingglass: 'search',
+  'xmark.circle.fill': 'cancel',
 } as IconMapping;
 
 /**
