@@ -1,31 +1,75 @@
-import type { EventStudentItem } from '@/features/events/types/eventTypes';
-import { Image, Text, View } from 'react-native';
+import React, { useMemo } from 'react';
+import { ImageBackground, Text, View } from 'react-native';
 
-type Props = {
+import type { EventStudentItem } from '@/features/events/types/eventTypes';
+
+type EventBannerCarouselItemProps = {
   event: EventStudentItem;
-  width: number;
 };
 
-export function EventBannerCarouselItem({ event, width }: Props) {
+function formatEventDate(event: EventStudentItem): string {
+  const rawEvent = event as unknown as Record<string, unknown>;
+
+  const possibleDate =
+    rawEvent.date ??
+    rawEvent.eventDate ??
+    rawEvent.startDate ??
+    rawEvent.startsAt ??
+    rawEvent.fecha;
+
+  if (!possibleDate) return '';
+
+  if (typeof possibleDate === 'string' || typeof possibleDate === 'number') {
+    const parsed = new Date(possibleDate);
+
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleDateString('es-MX', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      });
+    }
+
+    return String(possibleDate);
+  }
+
+  return '';
+}
+
+export function EventBannerCarouselItem({
+  event,
+}: EventBannerCarouselItemProps) {
+  const formattedDate = useMemo(() => formatEventDate(event), [event]);
+
+  if (!event.imageUrl) return null;
+
   return (
-    <View style={{ width }} className="px-4">
-      <View className="overflow-hidden rounded-2xl">
-        <Image
-          source={{ uri: event.imageUrl }}
-          className="h-48 w-full"
-          resizeMode="cover"
-        />
-        {/* Overlay degradado con título */}
-        <View className="absolute right-0 bottom-0 left-0 bg-black/40 px-4 py-3">
+    <View className="w-full overflow-hidden rounded-[28px]">
+      <ImageBackground
+        source={{ uri: event.imageUrl }}
+        resizeMode="cover"
+        className="h-52 w-full justify-end"
+        imageStyle={{ borderRadius: 28 }}
+      >
+        <View className="h-full w-full justify-end bg-black/35 px-5 py-4">
           <Text
-            className="text-base font-bold text-white"
+            className="text-xl font-extrabold text-white"
             numberOfLines={2}
             ellipsizeMode="tail"
           >
             {event.title}
           </Text>
+
+          {formattedDate ? (
+            <Text
+              className="mt-2 text-sm font-medium text-white/90"
+              numberOfLines={1}
+            >
+              {formattedDate}
+            </Text>
+          ) : null}
         </View>
-      </View>
+      </ImageBackground>
     </View>
   );
 }
