@@ -14,7 +14,6 @@ export function EventBannerCarousel({ events = BANNER_EVENTS }: Props) {
   const { width } = useWindowDimensions();
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // useRef evita que FlatList se re-renderice cada vez que cambia el callback
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
       if (viewableItems.length > 0) {
@@ -23,8 +22,9 @@ export function EventBannerCarousel({ events = BANNER_EVENTS }: Props) {
     },
   );
 
-  // El slide se marca como activo cuando el 50% de su área es visible
-  const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 50 });
+  const viewabilityConfig = useRef({
+    viewAreaCoveragePercentThreshold: 50,
+  });
 
   return (
     <View>
@@ -33,15 +33,23 @@ export function EventBannerCarousel({ events = BANNER_EVENTS }: Props) {
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
+        bounces={false}
+        decelerationRate="fast"
+        snapToAlignment="start"
+        nestedScrollEnabled
+        keyExtractor={(item) => item.id}
         onViewableItemsChanged={onViewableItemsChanged.current}
         viewabilityConfig={viewabilityConfig.current}
-        keyExtractor={(item) => item.id}
+        getItemLayout={(_, index) => ({
+          length: width,
+          offset: width * index,
+          index,
+        })}
         renderItem={({ item }) => (
           <EventBannerCarouselItem event={item} width={width} />
         )}
       />
 
-      {/* Puntos de paginación */}
       <View className="mt-4 flex-row justify-center gap-2">
         {events.map((_, i) => (
           <View

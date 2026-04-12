@@ -12,4 +12,5 @@ export const EVENT_CATEGORIES: string[] = [
   'Museo Nacional de la Muerte',
   'Servicio Social',
   'Deportes',
+  'Otros',
 ];
